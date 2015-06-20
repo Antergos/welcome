@@ -33,7 +33,7 @@ import webbrowser
 
 from simplejson import dumps as to_json
 
-from gi.repository import WebKit, Gtk
+from pgi.repository import WebKit, Gtk
 
 
 class WelcomeConfig(object):
