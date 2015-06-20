@@ -1,4 +1,4 @@
-![screenshot](https://raw.github.com/karasu/antergos-welcome/master/screenshot.png)
+![screenshot](https://raw.github.com/jkw/antergos-welcome/master/screenshot.png)
 
 antergos-welcome
 ================
