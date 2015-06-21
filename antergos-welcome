@@ -124,7 +124,7 @@ class AppView(WebKit.WebView):
         self.execute_script(
             "$('#autostart').toggleClass('icon-check', %s).toggleClass(\
             'icon-check-empty', %s)" % (to_json(self._config.autostart),
-            to_json(not self._config.autostart)))
+                                        to_json(not self._config.autostart)))
 
         # if self._config.desktop == 'GNOME':
         #  self.execute_script("$('#gnome_help').toggleClass('hide', false);")
@@ -170,10 +170,8 @@ class AppView(WebKit.WebView):
         self.l_uri = uri
 
         page = urllib.request.urlopen(uri)
-        frame.load_string(
-                          page.read().decode(),
-                          "text/html", "iso-8859-15", page.geturl()
-                        )
+        frame.load_string(page.read().decode(),
+                          "text/html", "iso-8859-15", page.geturl())
         pol_dec.ignore()
         return True
 
