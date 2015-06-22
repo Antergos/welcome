@@ -23,7 +23,7 @@
 
 import inspect
 import os
-import json
+# import json
 import signal
 import subprocess
 import sys
@@ -33,10 +33,13 @@ import webbrowser
 
 from simplejson import dumps as to_json
 
-from gi.repository import WebKit, Gtk
+from pgi.repository import WebKit, Gtk
+
 
 class WelcomeConfig(object):
+
     """ Manages Welcome configuration """
+
     def __init__(self):
         # store our base architecture
         if os.uname()[4] == 'x86_64':
@@ -48,19 +51,21 @@ class WelcomeConfig(object):
         self._live = (os.path.exists('/bootmnt/antergos'))
 
         # store full path to our binary
-        self._welcome_bin_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
+        self._welcome_bin_path = os.path.abspath(inspect.getfile(
+            inspect.currentframe()))
 
         # store directory to our welcome configuration
         self._config_dir = os.path.expanduser('~/.config/antergos/welcome/')
 
         # store full path to our autostart symlink
-        self._autostart_path = os.path.expanduser('~/.config/autostart/antergos-welcome.desktop')
+        self._autostart_path = os.path.expanduser(
+            '~/.config/autostart/antergos-welcome.desktop')
 
         # ensure our config directory exists
         if not os.path.exists(self._config_dir):
             try:
                 os.makedirs(self._config_dir)
-            except OSError as err:
+            except OSError:
                 pass
         # does autostart symlink exist
         self._autostart = os.path.exists(self._autostart_path)
@@ -78,14 +83,16 @@ class WelcomeConfig(object):
         if state and not os.path.exists(self._autostart_path):
             # create the autostart symlink
             try:
-                os.symlink('/usr/share/applications/antergos-welcome.desktop', self._autostart_path)
-            except OSError as err:
+                os.symlink(
+                    '/usr/share/applications/antergos-welcome.desktop',
+                    self._autostart_path)
+            except OSError:
                 pass
         elif not state and os.path.exists(self._autostart_path):
             # remove the autostart symlink
             try:
                 os.unlink(self._autostart_path)
-            except OSError as err:
+            except OSError:
                 pass
 
         # determine autostart state based on absence of the disable file
@@ -95,36 +102,46 @@ class WelcomeConfig(object):
     def live(self):
         return self._live
 
+
 class AppView(WebKit.WebView):
+
     def __init__(self):
         WebKit.WebView.__init__(self)
 
         self._config = WelcomeConfig()
 
         self.connect('load-finished', self._load_finished_cb)
-        self.connect('navigation-policy-decision-requested', self._nav_request_policy_decision_cb)
+        self.connect('navigation-policy-decision-requested',
+                     self._nav_request_policy_decision_cb)
         self.l_uri = None
 
     def _push_config(self):
-        # TODO: push notification should be connected to angularjs and use a broadcast event
-        # any suitable controllers will be able to listen and respond accordingly, for now
-        # we just use jQuery to manually toggle
+        # TODO: push notification should be connected to angularjs and use a
+        # broadcast event any suitable controllers will be able to listen and
+        # respond accordingly, for now we just use jQuery to manually toggle
 
         self.execute_script("$('#arch').html('%s')" % self._config.arch)
-        self.execute_script("$('#autostart').toggleClass('icon-check', %s).toggleClass('icon-check-empty', %s)" % (to_json(self._config.autostart), to_json(not self._config.autostart)))
+        self.execute_script(
+            "$('#autostart').toggleClass('icon-check', %s).toggleClass(\
+            'icon-check-empty', %s)" % (to_json(self._config.autostart),
+                                        to_json(not self._config.autostart)))
 
-        #if self._config.desktop == 'GNOME':
+        # if self._config.desktop == 'GNOME':
         #  self.execute_script("$('#gnome_help').toggleClass('hide', false);")
-        #elif self._config.desktop == 'KDE':
+        # elif self._config.desktop == 'KDE':
         #  self.execute_script("$('#kde_help').toggleClass('hide', false);")
 
-        #self.execute_script("$('#codename').html('%s')" % (to_json(self._config.codename)))
-        #self.execute_script("$('#desktop').html('%s')" % (to_json(self._config.desktop)))
-        #self.execute_script("$('#version').html('%s')" % (self._config.version))
+        # self.execute_script("$('#codename').html('%s')" %
+        #   (to_json(self._config.codename)))
+        # self.execute_script("$('#desktop').html('%s')" %
+        #   (to_json(self._config.desktop)))
+        # self.execute_script("$('#version').html('%s')" %
+        #   (self._config.version))
 
         if self._config.live:
             self.execute_script("$('#install').toggleClass('hide', false);")
-            self.execute_script("$('#install-cli').toggleClass('hide', false);")
+            self.execute_script(
+                "$('#install-cli').toggleClass('hide', false);")
         else:
             self.execute_script("$('#build').toggleClass('hide', false);")
             self.execute_script("$('#donate').toggleClass('hide', false);")
@@ -132,7 +149,8 @@ class AppView(WebKit.WebView):
     def _load_finished_cb(self, view, frame):
         self._push_config()
 
-    def _nav_request_policy_decision_cb(self, view, frame, net_req, nav_act, pol_dec):
+    def _nav_request_policy_decision_cb(self, view, frame, net_req, nav_act,
+                                        pol_dec):
         uri = net_req.get_uri()
 
         try:
@@ -152,7 +170,8 @@ class AppView(WebKit.WebView):
         self.l_uri = uri
 
         page = urllib.request.urlopen(uri)
-        frame.load_string(page.read().decode(), "text/html", "iso-8859-15", page.geturl())
+        frame.load_string(page.read().decode(),
+                          "text/html", "iso-8859-15", page.geturl())
         pol_dec.ignore()
         return True
 
@@ -164,10 +183,10 @@ class AppView(WebKit.WebView):
             subprocess.Popen(['yelp'])
         elif uri == 'kde-help':
             subprocess.Popen(['khelpcenter'])
-        #elif uri == 'install':
-            #subprocess.Popen(['sudo','live-installer'])
-        #elif uri == 'install-cli':
-            #subprocess.Popen(['xdg-terminal','sudo setup'])
+        # elif uri == 'install':
+            # subprocess.Popen(['sudo','live-installer'])
+        # elif uri == 'install-cli':
+            # subprocess.Popen(['xdg-terminal','sudo setup'])
         elif uri == 'close':
             Gtk.main_quit()
         elif uri == 'toggle-startup':
@@ -179,16 +198,20 @@ class AppView(WebKit.WebView):
         else:
             print('Unknown command: %s' % uri)
 
+
 class WelcomeApp(object):
+
     def __init__(self):
         # establish our location
-        self._location = os.path.dirname( os.path.abspath(inspect.getfile(inspect.currentframe())) )
+        self._location = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
 
         # check for relative path
-        if( os.path.exists( os.path.join(self._location, 'data/' ) ) ):
-            print('Using relative path for data source. Non-production testing.')
+        if(os.path.exists(os.path.join(self._location, 'data/'))):
+            print('Using relative path for data source.\
+                   Non-production testing.')
             self._data_path = os.path.join(self._location, 'data/')
-        elif( os.path.exists('/usr/share/antergos-welcome/') ):
+        elif(os.path.exists('/usr/share/antergos-welcome/')):
             print('Using /usr/share/antergos-welcome/ path.')
             self._data_path = '/usr/share/antergos-welcome/'
         else:
@@ -212,7 +235,7 @@ class WelcomeApp(object):
         mv = AppView()
 
         # load our index file
-        file = os.path.abspath( os.path.join( self._data_path, 'index.html') )
+        file = os.path.abspath(os.path.join(self._data_path, 'index.html'))
         uri = 'file://' + urllib.request.pathname2url(file)
         mv.open(uri)
 
@@ -238,7 +261,7 @@ class WelcomeApp(object):
         Gtk.main()
 
     def close(self, p1, p2):
-        Gtk.main_quit(p1, p2);
+        Gtk.main_quit(p1, p2)
 
 app = WelcomeApp()
 app.run()
