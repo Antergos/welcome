@@ -33,11 +33,13 @@ import webbrowser
 
 from simplejson import dumps as to_json
 
-from pgi.repository import WebKit, Gtk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('WebKit2', '4.0')
+from gi.repository import Gtk, GLib, WebKit2
 
 
 class WelcomeConfig(object):
-
     """ Manages Welcome configuration """
 
     def __init__(self):
@@ -48,18 +50,16 @@ class WelcomeConfig(object):
             self._arch = '32-bit'
 
         # store we are a live CD session
-        self._live = (os.path.exists('/bootmnt/antergos'))
+        self._live = os.path.exists('/bootmnt/antergos')
 
         # store full path to our binary
-        self._welcome_bin_path = os.path.abspath(inspect.getfile(
-            inspect.currentframe()))
+        self._welcome_bin_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
 
         # store directory to our welcome configuration
         self._config_dir = os.path.expanduser('~/.config/antergos/welcome/')
 
         # store full path to our autostart symlink
-        self._autostart_path = os.path.expanduser(
-            '~/.config/autostart/antergos-welcome.desktop')
+        self._autostart_path = os.path.expanduser('~/.config/autostart/antergos-welcome.desktop')
 
         # ensure our config directory exists
         if not os.path.exists(self._config_dir):
@@ -103,76 +103,45 @@ class WelcomeConfig(object):
         return self._live
 
 
-class AppView(WebKit.WebView):
-
+class AppView(WebKit2.WebView):
     def __init__(self):
-        WebKit.WebView.__init__(self)
+        WebKit2.WebView.__init__(self)
 
         self._config = WelcomeConfig()
 
-        self.connect('load-finished', self._load_finished_cb)
-        self.connect('navigation-policy-decision-requested',
-                     self._nav_request_policy_decision_cb)
-        self.l_uri = None
+        self.connect('load-changed', self._load_changed_cb)
+        self.connect('load-failed', self._load_failed_cb)
 
     def _push_config(self):
-        # TODO: push notification should be connected to angularjs and use a
-        # broadcast event any suitable controllers will be able to listen and
-        # respond accordingly, for now we just use jQuery to manually toggle
-
-        self.execute_script("$('#arch').html('%s')" % self._config.arch)
-        self.execute_script(
+        self.run_javascript("$('#arch').html('%s')" % self._config.arch)
+        self.run_javascript(
             "$('#autostart').toggleClass('icon-check', %s).toggleClass(\
             'icon-check-empty', %s)" % (to_json(self._config.autostart),
                                         to_json(not self._config.autostart)))
-
-        # if self._config.desktop == 'GNOME':
-        #  self.execute_script("$('#gnome_help').toggleClass('hide', false);")
-        # elif self._config.desktop == 'KDE':
-        #  self.execute_script("$('#kde_help').toggleClass('hide', false);")
-
-        # self.execute_script("$('#codename').html('%s')" %
-        #   (to_json(self._config.codename)))
-        # self.execute_script("$('#desktop').html('%s')" %
-        #   (to_json(self._config.desktop)))
-        # self.execute_script("$('#version').html('%s')" %
-        #   (self._config.version))
-
         if self._config.live:
-            self.execute_script("$('#install').toggleClass('hide', false);")
-            self.execute_script(
+            self.run_javascript("$('#install').toggleClass('hide', false);")
+            self.run_javascript(
                 "$('#install-cli').toggleClass('hide', false);")
         else:
-            self.execute_script("$('#build').toggleClass('hide', false);")
-            self.execute_script("$('#donate').toggleClass('hide', false);")
+            self.run_javascript("$('#build').toggleClass('hide', false);")
+            self.run_javascript("$('#donate').toggleClass('hide', false);")
 
-    def _load_finished_cb(self, view, frame):
-        self._push_config()
+    def _load_changed_cb(self, view, load_event):
+        if load_event == WebKit2.LoadEvent.FINISHED:
+            self._push_config()
+        elif load_event == WebKit2.LoadEvent.STARTED:
+            uri = view.get_uri()
+            try:
+                if uri.index('#') > 0:
+                    uri = uri[:uri.index('#')]
+            except ValueError:
+                pass
 
-    def _nav_request_policy_decision_cb(self, view, frame, net_req, nav_act,
-                                        pol_dec):
-        uri = net_req.get_uri()
+            if uri.startswith('cmd://'):
+                self._do_command(uri)
 
-        try:
-            if uri.index('#') > 0:
-                uri = uri[:uri.index('#')]
-        except ValueError:
-            pass
-
-        if uri == self.l_uri:
-            pol_dec.use()
-            return True
-
-        if uri.startswith('cmd://'):
-            self._do_command(uri)
-            return True
-
-        self.l_uri = uri
-
-        page = urllib.request.urlopen(uri)
-        frame.load_string(page.read().decode(),
-                          "text/html", "iso-8859-15", page.geturl())
-        pol_dec.ignore()
+    def _load_failed_cb(self, view, load_event, failing_uri, error):
+        # Returns True to stop other handlers from being invoked for the event
         return True
 
     def _do_command(self, uri):
@@ -200,7 +169,6 @@ class AppView(WebKit.WebView):
 
 
 class WelcomeApp(object):
-
     def __init__(self):
         # establish our location
         self._location = os.path.dirname(
@@ -237,7 +205,7 @@ class WelcomeApp(object):
         # load our index file
         file = os.path.abspath(os.path.join(self._data_path, 'index.html'))
         uri = 'file://' + urllib.request.pathname2url(file)
-        mv.open(uri)
+        mv.load_uri(uri)
 
         # build scrolled window widget and add our appview container
         sw = Gtk.ScrolledWindow()
