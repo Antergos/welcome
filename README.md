@@ -8,4 +8,3 @@ Antergos welcome screen
 * python3
 * gtk
 * python-simplejson
-
