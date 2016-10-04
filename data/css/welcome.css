@@ -1,15 +1,15 @@
 @font-face {
-  font-family: 'Ubuntu';
+  font-family: 'Lato', sans-serif;
   font-style: normal;
   font-weight: 300;
 }
 @font-face {
-  font-family: 'Ubuntu';
+  font-family: 'Lato', sans-serif;
   font-style: normal;
   font-weight: 400;
 }
 @font-face {
-  font-family: 'Ubuntu';
+  font-family: 'Lato', sans-serif;
   font-style: normal;
   font-weight: 700;
 }
@@ -21,7 +21,7 @@ html, body {
 }
 
 body, button {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Lato', sans-serif;
 }
 
 #wrapper {
