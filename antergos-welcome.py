@@ -195,7 +195,7 @@ class WelcomeApp(object):
         w.set_title('')
         w.set_size_request(768, 496)
 
-        icon_dir = os.path.join(self._data_path, 'img', 'antergos-icon.png')
+        icon_dir = os.path.join(self._data_path, 'img/logos', 'antergos.png')
         w.set_icon_from_file(icon_dir)
 
         # build webkit container
