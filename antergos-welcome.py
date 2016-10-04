@@ -4,6 +4,7 @@
 # Copyright 2012-2013 "Korora Project" <dev@kororaproject.org>
 # Copyright 2013 "Manjaro Linux" <support@manjaro.org>
 # Copyright 2014-2016 Antergos <devs@antergos.com>
+# Copyright 2015 Martin Wimpress <code@flexion.org>
 #
 # Antergos Welcome is free software: you can redistribute it and/or modify
 # it under the temms of the GNU General Public License as published by
