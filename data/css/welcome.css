@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 300;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -5,11 +21,7 @@ html, body {
 }
 
 body, button {
-  font-family: 'Lato', sans-serif;
-}
-
-h1,h2,h3,h4,h5,h6 {
-    font-family: Raleway, sans-serif;
+  font-family: 'Ubuntu', sans-serif;
 }
 
 #wrapper {
@@ -28,11 +40,14 @@ p.no-space {
 }
 
 .backdrop {
-  background: url("../img/background.jpg");
+  background: url("../img/welcome/background.png");
   background-repeat:no-repeat;
-  background-attachment: fixed;
-    background-size: cover;
-  /*background-color:#f4f4f4;*/
+  background-position:center;
+  background-color:#f4f4f4;
+}
+
+.backdrop-simple {
+  background-color:#f4f4f4;
 }
 
 /*
@@ -45,16 +60,19 @@ p.no-space {
 }
 
 #header .logo {
-  height: 58px;
+  height: 64px;
 }
 
 #header h1 {
+  margin-left: 16px;
+  line-height: 64px;
   text-align: center;
 
-  /*text-shadow: 2px 4px 8px rgba(0,0,0,0.4),
-               0px -5px 35px rgba(255,255,255,0.8);*/
+  text-shadow: 2px 4px 8px rgba(0,0,0,0.4),
+               0px -5px 35px rgba(255,255,255,0.8);
 
-  font-weight: normal;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 #header h2 {
@@ -62,8 +80,9 @@ p.no-space {
   line-height: 16px;
   text-align: center;
 
-  /*text-shadow: 2px 4px 8px rgba(0,0,0,0.4),*/
-               /*0px -5px 35px rgba(255,255,255,0.8);*/
+  text-shadow: 2px 4px 8px rgba(0,0,0,0.4),
+               0px -5px 35px rgba(255,255,255,0.8);
+
   font-size: 16px;
   font-weight: normal;
 }
@@ -142,7 +161,7 @@ p.no-space {
 
 .divider {
   padding-top: 16px;
-  background: url("../img/header-shadow.png") center 0 no-repeat;
+  background: url("../img/welcome/header-shadow.png") center 0 no-repeat;
 }
 
 .btn-showcase {
@@ -171,18 +190,16 @@ p.no-space {
 */
 
 #footer {
-  background: url("../img/footer-bg.jpg");
-  position: absolute;
+  background: url("../img/welcome/footer-bg.jpg");
+  position: fixed;
   bottom: 0;
-
   height: 64px;
   width: 100%;
-
   padding: 0;
 }
 
 #footer .footer-content {
-  /*background: url("../img/footer-shadow.png") center 0 no-repeat;*/
+  background: url("../img/welcome/footer-shadow.png") center 0 no-repeat;
   padding: 16px;
 }
 
@@ -200,16 +217,11 @@ p.no-space {
 
 #footer label {
   display: inline-block;
-
   padding-left: 0;
   margin-bottom: 0;
   vertical-align: middle;
   margin-right: 8px;
   color: #fff;
-}
-
-#toggle_autostart {
-  margin-top: 8px;
 }
 
 #social {
@@ -235,6 +247,107 @@ p.no-space {
   opacity: 1.0;
 }
 
-.links-cat h4 {
-    text-align: center;
+/* No margin for social icon in navbar */
+.no-margin {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+img.centered {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+img.left {
+    margin-right: 10px;
+    float: left;
+}
+
+img.right {
+    margin-right: 10px;
+    float: right;
+}
+
+hr.soften {
+  height: 1px;
+  background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,.8), rgba(0,0,0,0));
+  background-image:    -moz-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,.8), rgba(0,0,0,0));
+  background-image:     -ms-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,.8), rgba(0,0,0,0));
+  background-image:      -o-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,.8), rgba(0,0,0,0));
+  border: 0;
+}
+
+.fa-va {
+  vertical-align: middle;
+}
+
+/** Splash Screen **/
+.splash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 446px;
+  height: 459px;
+  margin: -223px 0 0 -229.5px;
+  background-color: #f4f4f4;
+  opacity: 1;
+
+  /** Logo animation **/
+     -webkit-animation: hello 1.2s cubic-bezier(.42,0,.58,1) 1;
+        -moz-animation: hello 1.2s cubic-bezier(.42,0,.58,1) 1;
+          -o-animation: hello 1.2s cubic-bezier(.42,0,.58,1) 1;
+             animation: hello 1.2s cubic-bezier(.42,0,.58,1) 1;
+  }
+
+  /** Logo keyframes - Move, fade in, spin **/
+  @-webkit-keyframes hello {
+    from { opacity: 0; left: 100%; -webkit-transform: rotate(60deg); }
+    to   { opacity: 1; left: 50%; }
+  }
+  @-moz-keyframes hello {
+    from { opacity: 0; left: 100%; -moz-transform: rotate(60deg); }
+    to   { opacity: 1; left: 50%; }
+  }
+  @-o-keyframes hello {
+    from { opacity: 0; left: 100%; -o-transform: rotate(60deg); transform:rotate(60deg); }
+    to   { opacity: 1; left: 50%; }
+  }
+  @keyframes hello {
+    from { opacity: 0; left: 100%; -webkit-transform: rotate(60deg); transform:rotate(60deg); }
+    to   { opacity: 1; left: 50%; }
+  }
+
+/** Fade elements on Main Menu **/
+.fade { opacity: 0 }
+.fade-1s { -webkit-animation: fadeIn 1000ms forwards 10ms;   animation: fadeIn 1000ms forwards 10ms; }   /** Header **/
+.fade-2s { -webkit-animation: fadeIn 1000ms forwards 400ms;  animation: fadeIn 1000ms forwards 400ms; }  /** Subheadings **/
+.fade-3s { -webkit-animation: fadeIn 1000ms forwards 600ms;  animation: fadeIn 1000ms forwards 600ms; }  /** Row 1 Buttons **/
+.fade-4s { -webkit-animation: fadeIn 1000ms forwards 800ms;  animation: fadeIn 1000ms forwards 800ms; }  /** Row 2 Buttons **/
+.fade-5s { -webkit-animation: fadeIn 1000ms forwards 1000ms; animation: fadeIn 1000ms forwards 1000ms; }  /** Row 3 Buttons **/
+
+@-webkit-keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/** Floating Back to Top **/
+.scrollup {
+    position: fixed;
+    top: 32px;
+    right: 32px;
+    display: none;
+}
+
+/** Toggling visibility on software page **/
+.hideSection { display: none; }
+.proprietary { }
+.alternate { }
+
+/** Popover **/
+.popover-title {
+    background: url('../img/welcome/footer-bg.jpg') repeat-x top center;
+    color: #fff;
 }

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" ng-app>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="css/font-awesome.min.css" rel="stylesheet" media="screen">
+    <link href="css/welcome.css" rel="stylesheet" media="screen">
+</head>
+<body class="backdrop" ng-controller="WelcomeCtrl">
+<div id="wrapper">
+    <div id="header" class="container-fluid">
+        <div class="row-fluid">
+            <div class="col-12 center">
+                <h1>Welcome to Antergos</h1>
+            </div>
+
+            <div class="span3">
+              <div class="system-information">
+                <p><span class="label label-info" id="version">2016</span> <span class="label label-info" id="codename"></span></p>
+                <p><span class="label label-info" id="arch">64-bit</span> <span class="label label-info" id="desktop"></span></p>
+              </div>
+            </div>
+
+        </div>
+        <div class="row-fluid">
+            <div class="span12">
+                <div class="summary">
+                    <p>Welcome to Antergos, and thank you for joining our community. We the Antergos Developers, hope
+                        that you will enjoy using Antergos as much as we enjoy building it. The links below will help
+                        you get started with your new operating system.</p>
+
+                    <p>Enjoy the experience and don't hesitate to send us your feedback.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="content" class="container">
+        <div class="row">
+            <div class="col-sm-4 links-cat">
+                <!--Body content-->
+                <h4>Documentation</h4>
+
+                <div class="btn-group-vertical center-block" role="group">
+                    <a class="btn btn-block btn-info" href="./features.html"><i class="fa fa-star"></i> Release
+                        Notes</a>
+                    <a class="btn btn-block btn-default" href="cmd://link?http://antergos.com/wiki"><i
+                            class="fa fa-question-circle"></i> Antergos Wiki</a>
+                    <a class="btn btn-block btn-default" href="cmd://link?http://wiki.archlinux.org"><i
+                            class="fa fa-book"></i> Arch Wiki</a>
+                </div>
+            </div>
+            <div class="col-sm-4 links-cat">
+                <h4>Support</h4>
+
+                <div class="btn-group-vertical center-block" role="group">
+                    <a href="cmd://link?http://forum.antergos.com" class="btn btn-block btn-default"><i
+                            class="fa fa-users"></i> Forum</a>
+                    <a href="cmd://link?http://webchat.freenode.net/?channels=antergos&uio=d4"
+                       class="btn btn-block btn-default"><i class="fa fa-comments"></i> IRC Chat</a>
+                </div>
+            </div>
+            <div class="col-sm-4 links-cat">
+                <h4>Project</h4>
+
+                <div class="btn-group-vertical center-block" role="group">
+                    <a class="btn btn-block btn-default" href="./involved.html"><i class="fa fa-hand-o-up"></i> Get
+                        Involved</a>
+                    <a id="build" href="cmd://link?https://github.com/Antergos"
+                       class="btn btn-block btn-success hide"><i
+                            class="fa fa-github"></i> Bug Reporting</a>
+                    <a id="donate" href="cmd://link?http://antergos.com/donate/" class="btn btn-block btn-default hide"><i
+                            class="fa fa-gift"></i> Donations</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="footer">
+        <div class="footer-content">
+            <div id="social" class="pull-left" style="margin-top: -5px;">
+                <!-- <a href="cmd://link?https://plus.google.com/communities/116626481503903480477"><img src="img/social-google.png" style="width: 26px;"></a>
+                <a href="cmd://link?https://www.facebook.com/Antergos"><img src="img/social-facebook.png"></a>
+                <a href="cmd://link?https://twitter.com/Antergos"><img src="img/social-twitter.png"></a> -->
+                <a href="cmd://link?https://plus.google.com/communities/116626481503903480477"><i
+                        class="fa fa-google-plus-square fa-3x" style="color: #fff;"></i></a>
+                <a href="cmd://link?https://www.facebook.com/Antergos"><i class="fa fa-facebook-square fa-3x"
+                                                                          style="color: #fff;"></i></a>
+                <a href="cmd://link?https://twitter.com/Antergos"><i class="fa fa-twitter-square fa-3x"
+                                                                     style="color: #fff;"></i></a>
+            </div>
+            <div class="form">
+                <a id="toggle_autostart" href="cmd://toggle-startup"><i id="autostart" class="icon icon-check"></i> Show
+                    this dialog on startup.</a>
+                <a href="cmd://close" class="btn btn-primary btn-sm">Close</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="js/jquery.min.js"></script>
+<!-- <script src="js/angular.min.js"></script> -->
+<script src="js/bootstrap.min.js"></script>
+<script src="js/welcome.js"></script>
+</body>
+</html>
