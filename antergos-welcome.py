@@ -160,20 +160,22 @@ class AppView(WebKit2.WebView):
             self._push_config()
         elif uri == 'drivers':
             # Install drivers
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
             # pacman -Syu
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri == 'language':
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
+        elif uri.startswith('apt-remove?'):
+            print(uri, "NOT IMPLEMENTED!")
         elif uri == 'backup':
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri == 'users':
-            print("NOT IMPLEMENTED!")
+            print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith("link?"):
             webbrowser.open_new_tab(uri[5:])
         else:
