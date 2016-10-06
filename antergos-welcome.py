@@ -152,16 +152,28 @@ class AppView(WebKit2.WebView):
             subprocess.Popen(['yelp'])
         elif uri == 'kde-help':
             subprocess.Popen(['khelpcenter'])
-        # elif uri == 'install':
-            # subprocess.Popen(['sudo','live-installer'])
-        # elif uri == 'install-cli':
-            # subprocess.Popen(['xdg-terminal','sudo setup'])
         elif uri == 'close' or uri == 'quit':
             Gtk.main_quit()
         elif uri == 'toggle-startup':
             # toggle autostart
             self._config.autostart ^= True
             self._push_config()
+        elif uri == 'drivers':
+            # Install drivers
+            print("NOT IMPLEMENTED!")
+        elif uri == 'update':
+            # pacman -Syu
+            print("NOT IMPLEMENTED!")
+        elif uri == 'language':
+            print("NOT IMPLEMENTED!")
+        elif uri.startswith('apt-install?'):
+            print("NOT IMPLEMENTED!")
+        elif uri == 'backup':
+            print("NOT IMPLEMENTED!")
+        elif uri == 'firewall':
+            print("NOT IMPLEMENTED!")
+        elif uri == 'users':
+            print("NOT IMPLEMENTED!")
         elif uri.startswith("link?"):
             webbrowser.open_new_tab(uri[5:])
         else:
