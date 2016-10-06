@@ -156,7 +156,7 @@ class AppView(WebKit2.WebView):
             # subprocess.Popen(['sudo','live-installer'])
         # elif uri == 'install-cli':
             # subprocess.Popen(['xdg-terminal','sudo setup'])
-        elif uri == 'close':
+        elif uri == 'close' or uri == 'quit':
             Gtk.main_quit()
         elif uri == 'toggle-startup':
             # toggle autostart
