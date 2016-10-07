@@ -72,12 +72,6 @@ class WelcomeConfig(object):
         # does autostart symlink exist
         self._autostart = os.path.exists(self._autostart_path)
 
-        # init alpm
-        self.pacman = BasicPacman()
-
-        # TODO: Show some warning to the user as this is a lengthy operation
-        self.pacman.refresh()
-
     @property
     def arch(self):
         return self._arch
@@ -119,6 +113,12 @@ class AppView(WebKit2.WebView):
 
         self.connect('load-changed', self._load_changed_cb)
         self.connect('load-failed', self._load_failed_cb)
+
+        # init alpm
+        self.pacman = BasicPacman()
+
+        # TODO: Show some warning to the user as this is a lengthy operation
+        self.pacman.refresh()
 
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)
