@@ -31,7 +31,7 @@ import urllib.request
 import urllib.error
 import webbrowser
 
-import alpm.alpm as alpm
+from alpm.alpm import BasicPacman
 
 from simplejson import dumps as to_json
 
@@ -71,6 +71,12 @@ class WelcomeConfig(object):
                 pass
         # does autostart symlink exist
         self._autostart = os.path.exists(self._autostart_path)
+
+        # init alpm
+        self.pacman = BasicPacman()
+
+        # TODO: Show some warning to the user as this is a lengthy operation
+        self.pacman.refresh()
 
     @property
     def arch(self):
@@ -169,9 +175,11 @@ class AppView(WebKit2.WebView):
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
-            print(uri, "NOT IMPLEMENTED!")
+            packages = uri[len('apt-install?'):].split(",")
+            self.pacman.install(packages)
         elif uri.startswith('apt-remove?'):
-            print(uri, "NOT IMPLEMENTED!")
+            packages = uri[len('apt-remove?'):].split(",")
+            self.pacman.remove(packages)
         elif uri == 'backup':
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':
