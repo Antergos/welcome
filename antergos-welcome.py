@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
 #
 # Copyright 2012-2013 "Korora Project" <dev@kororaproject.org>
@@ -30,6 +30,8 @@ import sys
 import urllib.request
 import urllib.error
 import webbrowser
+
+import alpm.alpm as alpm
 
 from simplejson import dumps as to_json
 
