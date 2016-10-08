@@ -18,7 +18,9 @@
 #
 
 import sys
+import glob
 
+from collections import OrderedDict
 from alpm import alpm_events as events
 
 try:
@@ -28,18 +30,53 @@ except ImportError as err:
     print("Check that you have python-alpm installed")
     sys.exit(-1)
 
-class BasicPacman(object):
+class InvalidSyntax(Warning):
+    """ Class to show warning when a pacman.conf parse error is issued """
+
+    def __init__(self, filename, problem, arg):
+        self.filename = filename
+        self.problem = problem
+        self.arg = arg
+
+    def __str__(self):
+        return "unable to parse {0}, {1}: {2}".format(self.filename, self.problem, self.arg)
+
+class BasicPacman():
     """ Comunicates with libalpm using pyalpm """
     _ROOT_DIR = "/"
     _DB_PATH = "/var/lib/pacman"
 
     def __init__(self):
-        self.handle = pyalpm.Handle(
-            BasicPacman._ROOT_DIR,
-            BasicPacman._DB_PATH)
+        self.repos = OrderedDict()
+
+        for section, key, value in self.pacman_conf_repos_enumerator("/etc/pacman.conf"):
+            if section != 'options':
+                self.repos.setdefault(section, {})
+                if key == 'Server':
+                    self.repos[section].setdefault('urls', []).append(value)
+
+        self.handle = pyalpm.Handle(BasicPacman._ROOT_DIR, BasicPacman._DB_PATH)
 
         if self.handle is None:
+            print("Alpm initialization error!")
             raise pyalpm.error
+
+        self.handle.logfile = "/var/log/pacman/pacman.log"
+        self.handle.gpgdir = "/etc/pacman.d/gnupg/"
+        self.handle.arch = "auto"
+        self.handle.cachedirs = "/var/cache/pacman/pkg"
+
+        # set "update" and "sync" databases
+        for repo, info in self.repos.items():
+            print(repo)
+            servers = info['urls']
+            db = self.handle.register_syncdb(repo, 0)
+            db_servers = []
+            for raw_url in servers:
+                url = raw_url.replace("$repo", repo)
+                url = url.replace("$arch", "auto")
+                db_servers.append(url)
+            db.servers = db_servers
 
         self.handle.logcb = None
         self.handle.dlcb = None
@@ -48,6 +85,45 @@ class BasicPacman(object):
         self.handle.questioncb = None
         self.handle.progresscb = self.cb_progress
         self.handle.fetchcb = None
+
+    @staticmethod
+    def pacman_conf_repos_enumerator(path):
+        filestack = []
+        current_section = None
+        filestack.append(open(path))
+        while len(filestack) > 0:
+            f = filestack[-1]
+            line = f.readline()
+            if len(line) == 0:
+                # end of file
+                f.close()
+                filestack.pop()
+                continue
+
+            line = line.strip()
+            if len(line) == 0 or line[0] == '#':
+                continue
+            if line[0] == '[' and line[-1] == ']':
+                current_section = line[1:-1]
+                continue
+            if current_section is None:
+                raise InvalidSyntax(f.name, 'statement outside of a section', line)
+
+            # read key, value
+            key, equal, value = [x.strip() for x in line.partition('=')]
+
+            # include files
+            if equal == '=' and key == 'Include':
+                filestack.extend(open(f) for f in glob.glob(value))
+                continue
+
+            if current_section != 'options':
+                # repos only have the Server, SigLevel, Usage options
+                if key in ('Server', 'SigLevel', 'Usage') and equal == '=':
+                    yield (current_section, key, value)
+                else:
+                    raise InvalidSyntax(f.name, 'invalid key for repository configuration', line)
+                continue
 
     def release(self):
         """ Release alpm handle """
@@ -60,19 +136,19 @@ class BasicPacman(object):
         """ Commit a transaction """
         all_ok = False
         try:
-            logging.debug("Prepare alpm transaction...")
+            print("Prepare alpm transaction...")
             transaction.prepare()
-            logging.debug("Commit alpm transaction...")
+            print("Commit alpm transaction...")
             transaction.commit()
             all_ok = True
         except pyalpm.error as pyalpm_error:
             msg = _("Can't finalize alpm transaction: %s")
-            logging.error(msg, pyalpm_error)
+            print(msg, pyalpm_error)
             traceback.print_exc()
         finally:
-            logging.debug("Releasing alpm transaction...")
+            print("Releasing alpm transaction...")
             transaction.release()
-            logging.debug("Alpm transaction done.")
+            print("Alpm transaction done.")
         return all_ok
 
     def init_transaction(self, options=None):
@@ -97,7 +173,7 @@ class BasicPacman(object):
                 unneeded=options.get('unneeded', False),
                 downloadonly=options.get('downloadonly', False))
         except pyalpm.error as pyalpm_error:
-            logging.error("Can't init alpm transaction: %s", pyalpm_error)
+            print("Can't init alpm transaction:", pyalpm_error)
         return transaction
 
     def remove(self, pkg_names, options=None):
@@ -112,18 +188,18 @@ class BasicPacman(object):
         for pkg_name in pkg_names:
             pkg = database.get_pkg(pkg_name)
             if pkg is None:
-                logging.error("Target %s not found", pkg_name)
+                print("Target {} not found".format(pkg_name))
                 return False
             targets.append(pkg)
 
         transaction = self.init_transaction(options)
 
         if transaction is None:
-            logging.error("Can't init transaction")
+            print("Can't init transaction")
             return False
 
         for pkg in targets:
-            logging.debug("Adding package '%s' to remove transaction", pkg.name)
+            print("Adding package '{}' to remove transaction".format(pkg.name))
             transaction.remove_pkg(pkg)
 
         return self.finalize_transaction(transaction)
@@ -131,7 +207,7 @@ class BasicPacman(object):
     def refresh(self):
         """ Sync databases like pacman -Sy """
         if self.handle is None:
-            logging.error("alpm is not initialised")
+            print("alpm is not initialised")
             raise pyalpm.error
 
         force = True
@@ -155,11 +231,11 @@ class BasicPacman(object):
             options = {}
 
         if self.handle is None:
-            logging.error("alpm is not initialised")
+            print("alpm is not initialised")
             raise pyalpm.error
 
         if len(pkgs) == 0:
-            logging.error("Package list is empty")
+            print("Package list is empty")
             raise pyalpm.error
 
         # Discard duplicates
@@ -183,7 +259,7 @@ class BasicPacman(object):
             repos[syncdb.name] = syncdb
 
         targets = []
-        logging.debug('REPO DB ORDER IS: %s', repo_order)
+        print('REPO DB ORDER IS: %s', repo_order)
 
         for name in pkgs:
             _repos = repos
@@ -213,18 +289,18 @@ class BasicPacman(object):
                     # No, it wasn't neither a package nor a group. As we don't
                     # know if this error is fatal or not, we'll register it and
                     # we'll allow to continue.
-                    logging.error("Can't find a package or group called '%s'", name)
+                    print("Can't find a package or group called ", name)
 
         # Discard duplicates
         targets = list(set(targets))
-        logging.debug(targets)
+        print(targets)
 
         if len(targets) == 0:
-            logging.error("No targets found")
+            print("No targets found")
             return False
 
         num_targets = len(targets)
-        logging.debug("%d target(s) found", num_targets)
+        print("{} target(s) found".format(num_targets))
 
         # Maybe not all this packages will be downloaded, but it's
         # how many have to be there before starting the installation
@@ -233,7 +309,7 @@ class BasicPacman(object):
         transaction = self.init_transaction(options)
 
         if transaction is None:
-            logging.error("Can't initialize alpm transaction")
+            print("Can't initialize alpm transaction")
             return False
 
         for i in range(0, num_targets):
@@ -241,7 +317,7 @@ class BasicPacman(object):
             if result_ok:
                 transaction.add_pkg(pkg)
             else:
-                logging.warning(pkg)
+                print(pkg)
 
         return self.finalize_transaction(transaction)
 
@@ -276,6 +352,8 @@ class BasicPacman(object):
             return True
         else:
             return False
+
+    # Callbacks
 
     def cb_event(self, event_type, event_txt):
         """ Converts action ID to descriptive text and enqueues it to the events queue """
