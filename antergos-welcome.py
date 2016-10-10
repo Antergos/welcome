@@ -31,7 +31,7 @@ import urllib.request
 import urllib.error
 import webbrowser
 
-from alpm.alpm import BasicPacman
+from pamac_client import PamacClient
 
 from simplejson import dumps as to_json
 
@@ -114,11 +114,10 @@ class AppView(WebKit2.WebView):
         self.connect('load-changed', self._load_changed_cb)
         self.connect('load-failed', self._load_failed_cb)
 
-        # init alpm
-        self.pacman = BasicPacman()
+        self.pamac = PamacClient()
 
         # TODO: Show some warning to the user as this is a lengthy operation
-        self.pacman.refresh()
+        self.pamac.refresh()
 
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)
