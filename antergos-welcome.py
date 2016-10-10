@@ -115,9 +115,8 @@ class AppView(WebKit2.WebView):
         self.connect('load-failed', self._load_failed_cb)
 
         self.pamac = PamacClient()
-
-        # TODO: Show some warning to the user as this is a lengthy operation
         self.pamac.refresh()
+        self.pamac.get_authorization()
 
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)
@@ -169,16 +168,15 @@ class AppView(WebKit2.WebView):
             # Install drivers
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
-            # pacman -Syu
-            print(uri, "NOT IMPLEMENTED!")
+            self.pamac.update()
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
             packages = uri[len('apt-install?'):].split(",")
-            self.pacman.install(packages)
+            self.pamac.install(packages)
         elif uri.startswith('apt-remove?'):
             packages = uri[len('apt-remove?'):].split(",")
-            self.pacman.remove(packages)
+            self.pamac.remove(packages)
         elif uri == 'backup':
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':

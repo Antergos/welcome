@@ -28,15 +28,6 @@ class PamacClient(object):
         self.interface = None
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-            """
-            g_bus_type: value,
-            g_connection: value,
-            g_default_timeout: value,
-            g_flags: value,
-            g_interface_name: value,
-            g_name: value,
-            g_object_path: value,
-            """
             self.dbus_proxy = Gio.DBusProxy.new_sync(
                 self.bus,
                 Gio.DBusProxyFlags.NONE,
@@ -56,14 +47,37 @@ class PamacClient(object):
                 self.on_refresh_finished,
                 None,
                 None)
+
+            self.bus.signal_subscribe(
+                "org.manjaro.pamac",
+                "org.manjaro.pamac",
+                "GetAuthorizationFinished",
+                None,
+                None,
+                0,
+                self.on_get_authorization_finished,
+                None,
+                None)
         except Exception as err:
             print(err)
             print("Can't find pamac. Is it really installed?")
 
-    def on_refresh_finished(self, status):
-        print("on_refresh_finished called!")
+    def get_authorization(self):
+        if self.dbus_proxy:
+            print("GetAuthorization called!")
+            res = self.dbus_proxy.call_sync(
+                "StartGetAuthorization",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None)
+
+    def on_get_authorization_finished(self, p1, p2, p3, p4, p5, p6, p7, p8):
+        print("on_get_authorization_finished")
+        print(p1, p2, p3, p4, p5, p6, p7, p8)
 
     def refresh(self):
+        """ pacman -Sy """
         if self.dbus_proxy:
             try:
                 print("StartRefresh called!")
@@ -76,49 +90,29 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-        """
-        			try {
-				pamac_daemon = Bus.get_proxy_sync (BusType.SYSTEM, "org.manjaro.pamac", "/org/manjaro/pamac");
-				pamac_daemon.refresh_finished.connect (on_refresh_finished);
-				pamac_daemon.start_refresh (false);
-				loop = new MainLoop ();
-				loop.run ();
-			} catch (IOError e) {
-				stderr.printf ("IOError: %s\n", e.message);
-			}
-        """
 
-    def check_authorization_cb(self, authority, res, loop):
-        try:
-            result = authority.check_authorization_finish(res)
-            if result.get_is_authorized():
-                print("Authorized")
-            elif result.get_is_challenge():
-                print("Challenge")
-            else:
-                print("Not authorized")
-        except GObject.GError as error:
-             print("Error checking authorization: %s" % error.message)
+    """
+GDBusConnection *connection,
+                        const gchar *sender_name,
+                        const gchar *object_path,
+                        const gchar *interface_name,
+                        const gchar *signal_name,
+                        GVariant *parameters,
+                        gpointer user_data
+    """
 
-        print("Authorization check has been cancelled "
-              "and the dialog should now be hidden.")
+    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data):
+        print("on_refresh_finished called!")
+        print(connection, sender_name, object_path, interface_name, signal_name, parameters, user_data)
 
-    def do_cancel(self, cancellable):
-        print("Timer has expired; cancelling authorization check")
-        cancellable.cancel()
-        return False
+    def update(self):
+        """ pacman -Syu """
+        print("NOT IMPLEMENTED!")
 
-    def check_authorization(self):
-        action_id = "org.freedesktop.policykit.exec"
-        authority = Polkit.Authority.get()
-        subject = Polkit.UnixProcess.new(os.getppid())
+    def install(self, pkgs):
+        """ pacman -S pkgs """
+        print("NOT IMPLEMENTED!")
 
-        cancellable = Gio.Cancellable()
-        GObject.timeout_add(10 * 1000, self.do_cancel, cancellable)
-
-        authority.check_authorization(subject,
-            action_id,
-            None,
-            Polkit.CheckAuthorizationFlags.ALLOW_USER_INTERACTION,
-            cancellable,
-            check_authorization_cb)
+    def remove(self, pkgs):
+        """ pacman -R pkgs """
+        print("NOT IMPLEMENTED!")
