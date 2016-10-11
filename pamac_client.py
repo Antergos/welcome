@@ -19,19 +19,10 @@
 
 import sys, os
 import gi
+
 gi.require_version('Polkit', '1.0')
 from gi.repository import GObject, Gio, GLib, Polkit
 
-
-"""
-Gio.DBusProxy.new_sync(
-            self.connection,
-            Gio.DBusProxyFlags.NONE,
-            info=None,
-            name=self.bus_name,
-            object_path=self.object_path,
-            interface_name=name)
-"""
 
 class PamacClient(object):
     _name = 'org.manjaro.pamac'
@@ -52,26 +43,15 @@ class PamacClient(object):
                 PamacClient._interface_name,
                 None)
 
-            self.signal_subscribe(
-                "RefreshFinished",
-                self.on_refresh_finished)
-
-            self.signal_subscribe(
-                "TransPrepareFinished",
-                self.on_transaction_prepare_finished)
-
-            self.signal_subscribe(
-                "TransCommitFinished",
-                self.on_transaction_commit_finished)
-
-            self.signal_subscribe(
-                "GetUpdatesFinished",
-                self.on_get_updates_finished)
+            self.connect("RefreshFinished", self.on_refresh_finished)
+            self.connect("TransPrepareFinished", self.on_transaction_prepare_finished)
+            self.connect("TransCommitFinished", self.on_transaction_commit_finished)
+            self.connect("GetUpdatesFinished", self.on_get_updates_finished)
         except Exception as err:
             print(err)
             print("Can't find pamac. Is it really installed?")
 
-    def signal_subscribe(self, signal_name, callback, user_data=None):
+    def connect(self, signal_name, callback, user_data=None):
         if self.bus:
             self.bus.signal_subscribe(
                 PamacClient._name, # sender
@@ -106,26 +86,22 @@ class PamacClient(object):
         variant = GLib.Variant("(b)", (False, ))
         self.call_sync("StartRefresh", variant)
 
-    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_refresh_finished called!")
-        print("connection", connection)
-        print("sender_name", sender_name)
-        print("object_path", object_path)
-        print("interface_name", interface_name)
-        print("signal_name", signal_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-        print("user_data_free_func", user_data_free_func)
+    def on_refresh_finished(
+            self, connection, sender_name, object_path, interface_name,
+            signal_name, parameters, user_data, user_data_free_func):
+        print("on_refresh_finished result:", parameters)
 
-    """
-    flags = (1 << 4); // Cascade
-	flags |= (1 << 5); // Recurse
-    """
     def transaction_prepare(self, flags, to_install, to_remove, to_load):
+        """
+        flags = (1 << 4); // Cascade
+        flags |= (1 << 5); // Recurse
+        """
         variant = GLib.Variant("(iasasas)", (flags, to_install, to_remove, to_load))
         self.call_sync("StartTransPrepare", variant)
 
-    def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
+    def on_transaction_prepare_finished(
+            self, connection, sender_name, object_path, interface_name,
+            signal_name, parameters, user_data, user_data_free_func):
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
@@ -135,7 +111,9 @@ class PamacClient(object):
     def transaction_commit(self):
         self.call_sync("StartTransCommit")
 
-    def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
+    def on_transaction_commit_finished(
+            self, connection, sender_name, object_path, interface_name,
+            signal_name, parameters, user_data, user_data_free_func):
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
@@ -145,7 +123,9 @@ class PamacClient(object):
         variant = GLib.Variant("(b)", (check_aur_updates, ))
         self.call_sync("StartGetUpdates", variant)
 
-    def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
+    def on_get_updates_finished(
+            self, connection, sender_name, object_path, interface_name,
+            signal_name, parameters, user_data, user_data_free_func):
         param1 = parameters[0]
         (unknown, pkgs_info, unknown2) = param1
         msg = ""

@@ -115,7 +115,7 @@ class AppView(WebKit2.WebView):
         self.connect('load-failed', self._load_failed_cb)
 
         self.pamac = PamacClient()
-        # self.pamac.refresh()
+        self.pamac.refresh()
 
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)
