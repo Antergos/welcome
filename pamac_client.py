@@ -52,25 +52,10 @@ class PamacClient(object):
             self.signal_subscribe(
                 "GetUpdatesFinished",
                 self.on_get_updates_finished)
-
         except Exception as err:
             print(err)
             print("Can't find pamac. Is it really installed?")
 
-
-    """
-guint
-g_dbus_connection_signal_subscribe (GDBusConnection *connection,
-                                    const gchar *sender,
-                                    const gchar *interface_name,
-                                    const gchar *member,
-                                    const gchar *object_path,
-                                    const gchar *arg0,
-                                    GDBusSignalFlags flags,
-                                    GDBusSignalCallback callback,
-                                    gpointer user_data,
-                                    GDestroyNotify user_data_free_func);
-    """
     def signal_subscribe(self, signal_name, callback, user_data=None):
         if self.bus:
             self.bus.signal_subscribe(
@@ -113,15 +98,10 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
         print("user_data", user_data)
         print("user_data_free_func", user_data_free_func)
 
-
     """
-    flags = (1 << 4); //Alpm.TransFlag.CASCADE
-			if (pamac_config.recurse) {
-				flags |= (1 << 5); //Alpm.TransFlag.RECURSE
-			}
-
+    flags = (1 << 4); // Cascade
+	flags |= (1 << 5); // Recurse
     """
-
     def transaction_prepare(self, flags, to_install, to_remove, to_load):
         variant = GLib.Variant("(iasasas)", (flags, to_install, to_remove, to_load))
         self.call_sync("StartTransPrepare", variant)
@@ -164,7 +144,6 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
         print("parameters", parameters)
         print("user_data", user_data)
         print("user_data_free_func", user_data_free_func)
-
 
 
     def install(self, pkgs):
