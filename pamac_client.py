@@ -42,6 +42,7 @@ class PamacClient(object):
         self.interface = None
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+
             self.dbus_proxy = Gio.DBusProxy.new_sync(
                 self.bus, # connection
                 Gio.DBusProxyFlags.NONE,
@@ -95,6 +96,10 @@ class PamacClient(object):
                     None)
             except Exception as err:
                 print(err)
+            return res
+
+    def get_current_error(self):
+        return self.call_sync("GetCurrentError")
 
     def refresh(self):
         """ pacman -Sy """
@@ -121,44 +126,46 @@ class PamacClient(object):
         self.call_sync("StartTransPrepare", variant)
 
     def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_transaction_prepare_finished")
-        print("connection", connection)
-        print("sender_name", sender_name)
-        print("object_path", object_path)
-        print("interface_name", interface_name)
-        print("signal_name", signal_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-        print("user_data_free_func", user_data_free_func)
+        print("on_transaction_prepare_finished called!")
+        if parameters[0] == False:
+            error = self.get_current_error()
+            print(error)
+        else:
+            self.transaction_commit()
 
     def transaction_commit(self):
+        print("transaction_commit called!")
         self.call_sync("StartTransCommit")
 
     def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_transaction_commit_finished")
-        print("connection", connection)
-        print("sender_name", sender_name)
-        print("object_path", object_path)
-        print("interface_name", interface_name)
-        print("signal_name", signal_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-        print("user_data_free_func", user_data_free_func)
+        print("on_transaction_commit_finished called!")
+        if parameters[0] == False:
+            error = self.get_current_error()
+            print(error)
 
     def get_updates(self):
-        self.call_sync("StartGetUpdates")
+        check_aur_updates = False
+        variant = GLib.Variant("(b)", (check_aur_updates, ))
+        self.call_sync("StartGetUpdates", variant)
 
     def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_get_updates_finished")
-        print("connection", connection)
-        print("sender_name", sender_name)
-        print("object_path", object_path)
-        print("interface_name", interface_name)
-        print("signal_name", signal_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-        print("user_data_free_func", user_data_free_func)
+        param1 = parameters[0]
+        (unknown, pkgs_info, unknown2) = param1
+        msg = ""
+        pkgs = []
+        for pkg_info in pkgs_info:
+            (pkg, old_ver, new_ver, repo, size) = pkg_info
+            msg += "Update {0} from {1} to {2}\n".format(pkg, old_ver, new_ver)
+            pkgs.append(pkg)
+        print(msg)
 
+    def sys_upgrade_prepare(self):
+        enable_downgrade = True
+        temporary_ignorepkgs = [""]
+        variant = GLib.Variant("(bas)", (enable_downgrade, temporary_ignorepkgs))
+        self.call_sync("StartSysupgradePrepare", variant)
+
+    # ------------------------------------------------------------------------
 
     def install(self, pkgs):
         """ pacman -S pkgs """
@@ -172,4 +179,5 @@ class PamacClient(object):
 
     def update(self):
         """ pacman -Syu """
-        self.get_updates()
+        #self.get_updates()
+        self.sys_upgrade_prepare()
