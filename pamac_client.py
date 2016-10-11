@@ -87,7 +87,7 @@ class PamacClient(object):
     def call_sync(self, method_name, params=None):
         if self.dbus_proxy:
             try:
-                print(method_name, "called!")
+                # print(method_name, "called!")
                 res = self.dbus_proxy.call_sync(
                     method_name,
                     params, # GLib.Variant(description, values)
@@ -126,7 +126,6 @@ class PamacClient(object):
         self.call_sync("StartTransPrepare", variant)
 
     def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_transaction_prepare_finished called!")
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
@@ -134,11 +133,9 @@ class PamacClient(object):
             self.transaction_commit()
 
     def transaction_commit(self):
-        print("transaction_commit called!")
         self.call_sync("StartTransCommit")
 
     def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print("on_transaction_commit_finished called!")
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
