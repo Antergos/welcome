@@ -117,7 +117,7 @@ class PamacClient(object):
 			if (pamac_config.recurse) {
 				flags |= (1 << 5); //Alpm.TransFlag.RECURSE
 			}
-    """"
+    """
     def install(self, pkgs):
         """ pacman -S pkgs """
         if self.dbus_proxy:
