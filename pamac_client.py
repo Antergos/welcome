@@ -84,19 +84,23 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
                 user_data, # user_data
                 None) # user_data_free_func
 
-    def refresh(self):
-        """ pacman -Sy """
+    def call_sync(self, method_name, params=None):
         if self.dbus_proxy:
             try:
-                print("StartRefresh called!")
+                print(method_name, "called!")
                 res = self.dbus_proxy.call_sync(
-                    "StartRefresh",
-                    GLib.Variant("(b)", (False, )),
+                    method_name,
+                    params, # GLib.Variant(description, values)
                     Gio.DBusCallFlags.NONE,
                     -1,
                     None)
             except Exception as err:
                 print(err)
+
+    def refresh(self):
+        """ pacman -Sy """
+        variant = GLib.Variant("(b)", (False, ))
+        self.call_sync("StartRefresh", variant)
 
     def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_refresh_finished called!")
@@ -118,25 +122,9 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
 
     """
 
-    def transaction_prepare(self, params):
-        """
-        params (tuple):
-            Int32 flags
-            Array of String to_install
-            Array of String to_remove
-            Array of String to_load
-        """
-        if self.dbus_proxy:
-            try:
-                print("Install called!")
-                res = self.dbus_proxy.call_sync(
-                    "StartTransPrepare",
-                    GLib.Variant("(iasasas)", params),
-                    Gio.DBusCallFlags.NONE,
-                    -1,
-                    None)
-            except Exception as err:
-                print(err)
+    def transaction_prepare(self, flags, to_install, to_remove, to_load):
+        variant = GLib.Variant("(iasasas)", (flags, to_install, to_remove, to_load))
+        self.call_sync("StartTransPrepare", variant)
 
     def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_transaction_prepare_finished")
@@ -150,17 +138,7 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
         print("user_data_free_func", user_data_free_func)
 
     def transaction_commit(self):
-        if self.dbus_proxy:
-            try:
-                print("transaction_commit called!")
-                res = self.dbus_proxy.call_sync(
-                    "StartTransCommit",
-                    None,
-                    Gio.DBusCallFlags.NONE,
-                    -1,
-                    None)
-            except Exception as err:
-                print(err)
+        self.call_sync("StartTransCommit")
 
     def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_transaction_commit_finished")
@@ -174,17 +152,7 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
         print("user_data_free_func", user_data_free_func)
 
     def get_updates(self):
-        if self.dbus_proxy:
-            try:
-                print("transaction_commit called!")
-                res = self.dbus_proxy.call_sync(
-                    "StartGetUpdates",
-                    None,
-                    Gio.DBusCallFlags.NONE,
-                    -1,
-                    None)
-            except Exception as err:
-                print(err)
+        self.call_sync("StartGetUpdates")
 
     def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_get_updates_finished")
@@ -202,12 +170,12 @@ g_dbus_connection_signal_subscribe (GDBusConnection *connection,
     def install(self, pkgs):
         """ pacman -S pkgs """
         flags = 0
-        self.prepare_transaction((flags, pkgs, None, None))
+        self.transaction_prepare(flags, pkgs, None, None)
 
     def remove(self, pkgs):
         """ pacman -R pkgs """
         flags = 0
-        self.prepare_transaction((flags, None, pkgs, None))
+        self.transaction_prepare(flags, None, pkgs, None)
 
     def update(self):
         """ pacman -Syu """
