@@ -57,18 +57,32 @@ class PamacClient(object):
             print(err)
             print("Can't find pamac. Is it really installed?")
 
-    def signal_subscribe(self, signal_name, callback, params=None):
+
+    """
+guint
+g_dbus_connection_signal_subscribe (GDBusConnection *connection,
+                                    const gchar *sender,
+                                    const gchar *interface_name,
+                                    const gchar *member,
+                                    const gchar *object_path,
+                                    const gchar *arg0,
+                                    GDBusSignalFlags flags,
+                                    GDBusSignalCallback callback,
+                                    gpointer user_data,
+                                    GDestroyNotify user_data_free_func);
+    """
+    def signal_subscribe(self, signal_name, callback, user_data=None):
         if self.bus:
             self.bus.signal_subscribe(
-                "org.manjaro.pamac",
-                "org.manjaro.pamac",
-                signal_name,
-                None,
-                None,
-                0,
-                callback,
-                None,
-                None)
+                "org.manjaro.pamac", # sender
+                "org.manjaro.pamac", # interface_name
+                signal_name, # member
+                None, # object_path
+                None, # arg0
+                0, # flags
+                callback, # callback
+                user_data, # user_data
+                None) # user_data_free_func
 
     def refresh(self):
         """ pacman -Sy """
@@ -84,7 +98,7 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_refresh_finished called!")
         print("connection", connection)
         print("sender_name", sender_name)
@@ -93,7 +107,7 @@ class PamacClient(object):
         print("signal_name", signal_name)
         print("parameters", parameters)
         print("user_data", user_data)
-        print("unknown", unknown)
+        print("user_data_free_func", user_data_free_func)
 
 
     """
@@ -124,7 +138,7 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-    def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+    def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_transaction_prepare_finished")
         print("connection", connection)
         print("sender_name", sender_name)
@@ -133,7 +147,7 @@ class PamacClient(object):
         print("signal_name", signal_name)
         print("parameters", parameters)
         print("user_data", user_data)
-        print("unknown", unknown)
+        print("user_data_free_func", user_data_free_func)
 
     def transaction_commit(self):
         if self.dbus_proxy:
@@ -148,7 +162,7 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-    def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+    def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_transaction_commit_finished")
         print("connection", connection)
         print("sender_name", sender_name)
@@ -157,7 +171,7 @@ class PamacClient(object):
         print("signal_name", signal_name)
         print("parameters", parameters)
         print("user_data", user_data)
-        print("unknown", unknown)
+        print("user_data_free_func", user_data_free_func)
 
     def get_updates(self):
         if self.dbus_proxy:
@@ -172,7 +186,7 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-    def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+    def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, user_data_free_func):
         print("on_get_updates_finished")
         print("connection", connection)
         print("sender_name", sender_name)
@@ -181,7 +195,7 @@ class PamacClient(object):
         print("signal_name", signal_name)
         print("parameters", parameters)
         print("user_data", user_data)
-        print("unknown", unknown)
+        print("user_data_free_func", user_data_free_func)
 
 
 
