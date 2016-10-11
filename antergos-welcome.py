@@ -116,7 +116,6 @@ class AppView(WebKit2.WebView):
 
         self.pamac = PamacClient()
         self.pamac.refresh()
-        #self.pamac.get_authorization()
 
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)

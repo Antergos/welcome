@@ -42,13 +42,22 @@ class PamacClient(object):
                 self.on_refresh_finished)
 
             self.signal_subscribe(
-                "GetAuthorizationFinished",
-                self.on_get_authorization_finished)
+                "TransPrepareFinished",
+                self.on_transaction_prepare_finished)
+
+            self.signal_subscribe(
+                "TransCommitFinished",
+                self.on_transaction_commit_finished)
+
+            self.signal_subscribe(
+                "GetUpdatesFinished",
+                self.on_get_updates_finished)
+
         except Exception as err:
             print(err)
             print("Can't find pamac. Is it really installed?")
 
-    def signal_subscribe(self, signal_name, callback):
+    def signal_subscribe(self, signal_name, callback, params=None):
         if self.bus:
             self.bus.signal_subscribe(
                 "org.manjaro.pamac",
@@ -60,27 +69,6 @@ class PamacClient(object):
                 callback,
                 None,
                 None)
-
-    def get_authorization(self):
-        if self.dbus_proxy:
-            print("GetAuthorization called!")
-            res = self.dbus_proxy.call_sync(
-                "StartGetAuthorization",
-                None,
-                Gio.DBusCallFlags.NONE,
-                -1,
-                None)
-
-    def on_get_authorization_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
-        print("on_get_authorization_finished")
-        print("connection", connection)
-        print("sender_name", sender_name)
-        print("object_path", object_path)
-        print("interface_name", interface_name)
-        print("signal_name", signal_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-        print("unknown", unknown)
 
     def refresh(self):
         """ pacman -Sy """
@@ -107,36 +95,106 @@ class PamacClient(object):
         print("user_data", user_data)
         print("unknown", unknown)
 
-    def update(self):
-        """ pacman -Syu """
-        print("NOT IMPLEMENTED!")
-
 
     """
     flags = (1 << 4); //Alpm.TransFlag.CASCADE
 			if (pamac_config.recurse) {
 				flags |= (1 << 5); //Alpm.TransFlag.RECURSE
 			}
+
     """
-    def install(self, pkgs):
-        """ pacman -S pkgs """
+
+    def transaction_prepare(self, params):
+        """
+        params (tuple):
+            Int32 flags
+            Array of String to_install
+            Array of String to_remove
+            Array of String to_load
+        """
         if self.dbus_proxy:
             try:
                 print("Install called!")
-                flags = 0
-                # Int32 flags
-                # Array of String to_install
-                # Array of String to_remove
-                # Array of String to_load
                 res = self.dbus_proxy.call_sync(
                     "StartTransPrepare",
-                    GLib.Variant("(iasasas)", (flags, pkgs, None, None)),
+                    GLib.Variant("(iasasas)", params),
                     Gio.DBusCallFlags.NONE,
                     -1,
                     None)
             except Exception as err:
                 print(err)
 
+    def on_transaction_prepare_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+        print("on_transaction_prepare_finished")
+        print("connection", connection)
+        print("sender_name", sender_name)
+        print("object_path", object_path)
+        print("interface_name", interface_name)
+        print("signal_name", signal_name)
+        print("parameters", parameters)
+        print("user_data", user_data)
+        print("unknown", unknown)
+
+    def transaction_commit(self):
+        if self.dbus_proxy:
+            try:
+                print("transaction_commit called!")
+                res = self.dbus_proxy.call_sync(
+                    "StartTransCommit",
+                    None,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    None)
+            except Exception as err:
+                print(err)
+
+    def on_transaction_commit_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+        print("on_transaction_commit_finished")
+        print("connection", connection)
+        print("sender_name", sender_name)
+        print("object_path", object_path)
+        print("interface_name", interface_name)
+        print("signal_name", signal_name)
+        print("parameters", parameters)
+        print("user_data", user_data)
+        print("unknown", unknown)
+
+    def get_updates(self):
+        if self.dbus_proxy:
+            try:
+                print("transaction_commit called!")
+                res = self.dbus_proxy.call_sync(
+                    "StartGetUpdates",
+                    None,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    None)
+            except Exception as err:
+                print(err)
+
+    def on_get_updates_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
+        print("on_get_updates_finished")
+        print("connection", connection)
+        print("sender_name", sender_name)
+        print("object_path", object_path)
+        print("interface_name", interface_name)
+        print("signal_name", signal_name)
+        print("parameters", parameters)
+        print("user_data", user_data)
+        print("unknown", unknown)
+
+
+
+    def install(self, pkgs):
+        """ pacman -S pkgs """
+        flags = 0
+        self.prepare_transaction((flags, pkgs, None, None))
+
     def remove(self, pkgs):
         """ pacman -R pkgs """
-        print("NOT IMPLEMENTED!")
+        flags = 0
+        self.prepare_transaction((flags, None, pkgs, None))
+
+    def update(self):
+        """ pacman -Syu """
+        self.get_updates()
