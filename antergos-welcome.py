@@ -31,7 +31,7 @@ import urllib.request
 import urllib.error
 import webbrowser
 
-from pamac_client import PamacClient
+from pamac import SimplePamac
 
 from simplejson import dumps as to_json
 
@@ -114,9 +114,6 @@ class AppView(WebKit2.WebView):
         self.connect('load-changed', self._load_changed_cb)
         self.connect('load-failed', self._load_failed_cb)
 
-        self.pamac = PamacClient()
-        self.pamac.refresh()
-
     def _push_config(self):
         self.run_javascript("$('#arch').html('%s')" % self._config.arch)
         self.run_javascript(
@@ -167,15 +164,22 @@ class AppView(WebKit2.WebView):
             # Install drivers
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
-            self.pamac.update()
+            # pacman -Syu
+            pamac = SimplePamac([], "update")
+            pamac.run_action()
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
+            # pacman -S
             packages = uri[len('apt-install?'):].split(",")
-            self.pamac.install(packages)
+            #self.pamac.install(packages)
+            pamac = SimplePamac(packages, "install")
+            pamac.run_action()
         elif uri.startswith('apt-remove?'):
+            # pacman -R
             packages = uri[len('apt-remove?'):].split(",")
-            self.pamac.remove(packages)
+            pamac = SimplePamac(packages, "remove")
+            pamac.run_action()
         elif uri == 'backup':
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':
