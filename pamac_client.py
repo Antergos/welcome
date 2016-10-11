@@ -37,30 +37,29 @@ class PamacClient(object):
                 'org.manjaro.pamac',
                 None)
 
-            self.bus.signal_subscribe(
-                "org.manjaro.pamac",
-                "org.manjaro.pamac",
+            self.signal_subscribe(
                 "RefreshFinished",
-                None,
-                None,
-                0,
-                self.on_refresh_finished,
-                None,
-                None)
+                self.on_refresh_finished)
 
-            self.bus.signal_subscribe(
-                "org.manjaro.pamac",
-                "org.manjaro.pamac",
+            self.signal_subscribe(
                 "GetAuthorizationFinished",
-                None,
-                None,
-                0,
-                self.on_get_authorization_finished,
-                None,
-                None)
+                self.on_get_authorization_finished)
         except Exception as err:
             print(err)
             print("Can't find pamac. Is it really installed?")
+
+    def signal_subscribe(self, signal_name, callback):
+        if self.bus:
+            self.bus.signal_subscribe(
+                "org.manjaro.pamac",
+                "org.manjaro.pamac",
+                signal_name,
+                None,
+                None,
+                0,
+                callback,
+                None,
+                None)
 
     def get_authorization(self):
         if self.dbus_proxy:
@@ -72,9 +71,16 @@ class PamacClient(object):
                 -1,
                 None)
 
-    def on_get_authorization_finished(self, p1, p2, p3, p4, p5, p6, p7, p8):
+    def on_get_authorization_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
         print("on_get_authorization_finished")
-        print(p1, p2, p3, p4, p5, p6, p7, p8)
+        print("connection", connection)
+        print("sender_name", sender_name)
+        print("object_path", object_path)
+        print("interface_name", interface_name)
+        print("signal_name", signal_name)
+        print("parameters", parameters)
+        print("user_data", user_data)
+        print("unknown", unknown)
 
     def refresh(self):
         """ pacman -Sy """
@@ -90,28 +96,46 @@ class PamacClient(object):
             except Exception as err:
                 print(err)
 
-
-    """
-GDBusConnection *connection,
-                        const gchar *sender_name,
-                        const gchar *object_path,
-                        const gchar *interface_name,
-                        const gchar *signal_name,
-                        GVariant *parameters,
-                        gpointer user_data
-    """
-
-    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data):
+    def on_refresh_finished(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data, unknown):
         print("on_refresh_finished called!")
-        print(connection, sender_name, object_path, interface_name, signal_name, parameters, user_data)
+        print("connection", connection)
+        print("sender_name", sender_name)
+        print("object_path", object_path)
+        print("interface_name", interface_name)
+        print("signal_name", signal_name)
+        print("parameters", parameters)
+        print("user_data", user_data)
+        print("unknown", unknown)
 
     def update(self):
         """ pacman -Syu """
         print("NOT IMPLEMENTED!")
 
+
+    """
+    flags = (1 << 4); //Alpm.TransFlag.CASCADE
+			if (pamac_config.recurse) {
+				flags |= (1 << 5); //Alpm.TransFlag.RECURSE
+			}
+    """"
     def install(self, pkgs):
         """ pacman -S pkgs """
-        print("NOT IMPLEMENTED!")
+        if self.dbus_proxy:
+            try:
+                print("Install called!")
+                flags = 0
+                # Int32 flags
+                # Array of String to_install
+                # Array of String to_remove
+                # Array of String to_load
+                res = self.dbus_proxy.call_sync(
+                    "StartTransPrepare",
+                    GLib.Variant("(iasasas)", (flags, pkgs, None, None)),
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    None)
+            except Exception as err:
+                print(err)
 
     def remove(self, pkgs):
         """ pacman -R pkgs """
