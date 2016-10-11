@@ -23,18 +23,32 @@ gi.require_version('Polkit', '1.0')
 from gi.repository import GObject, Gio, GLib, Polkit
 
 
+"""
+Gio.DBusProxy.new_sync(
+            self.connection,
+            Gio.DBusProxyFlags.NONE,
+            info=None,
+            name=self.bus_name,
+            object_path=self.object_path,
+            interface_name=name)
+"""
+
 class PamacClient(object):
+    _name = 'org.manjaro.pamac'
+    _object_path = '/org/manjaro/pamac'
+    _interface_name = 'org.manjaro.pamac'
+
     def __init__(self):
         self.interface = None
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
             self.dbus_proxy = Gio.DBusProxy.new_sync(
-                self.bus,
+                self.bus, # connection
                 Gio.DBusProxyFlags.NONE,
-                None,
-                'org.manjaro.pamac',
-                '/org/manjaro/pamac',
-                'org.manjaro.pamac',
+                None, # info
+                PamacClient._name,
+                PamacClient._object_path,
+                PamacClient._interface_name,
                 None)
 
             self.signal_subscribe(
@@ -59,8 +73,8 @@ class PamacClient(object):
     def signal_subscribe(self, signal_name, callback, user_data=None):
         if self.bus:
             self.bus.signal_subscribe(
-                "org.manjaro.pamac", # sender
-                "org.manjaro.pamac", # interface_name
+                PamacClient._name, # sender
+                PamacClient._interface_name, # interface_name
                 signal_name, # member
                 None, # object_path
                 None, # arg0
