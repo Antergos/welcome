@@ -31,7 +31,7 @@ def _(x):
 class SimplePamac(GObject.GObject):
     def __init__(self, packages, action=""):
         GObject.GObject.__init__(self)
-        self._timeout=100
+        self._timeout = 100
         self.packages = packages
         self.action = action
         self.refresh_before_install = False
@@ -39,6 +39,8 @@ class SimplePamac(GObject.GObject):
         self.client = PamacClient()
         if self.packages:
             print('Processing: ' + ', '.join(self.packages))
+        self.client.connect("finished", self.on_finished)
+        self.client.connect("refresh-finished", self.on_finished_refresh)
 
     def on_error(self, error):
         my_message = str(error)
@@ -52,30 +54,17 @@ class SimplePamac(GObject.GObject):
         msg_dialog.run()
         msg_dialog.destroy()
 
-    def on_finished_refresh(self, status, error):
+    def on_finished_refresh(self, client, status, error):
         self.do_notify(status)
         if status != 'exit-success':
             self.loop.quit()
             return False
-        # Refresh finished, let's install
-        GLib.timeout_add(self._timeout, self.do_install)
+        if self.packages:
+            # Refresh finished, let's install
+            GLib.timeout_add(self._timeout, self.do_install)
         return True
 
-    def on_finished_update(self, client, status, error):
-        self.do_notify(status)
-        self.loop.quit()
-        if status != 'exit-success':
-            return False
-        return True
-
-    def on_finished_install(self, client, status, error):
-        self.do_notify(status)
-        self.loop.quit()
-        if status != 'exit-success':
-            return False
-        return True
-
-    def on_finished_remove(self, client, status, error):
+    def on_finished(self, client, status, error):
         self.do_notify(status)
         self.loop.quit()
         if status != 'exit-success':
@@ -114,25 +103,21 @@ class SimplePamac(GObject.GObject):
         notify.show()
 
     def do_update(self):
-        self.client.connect("finished", self.on_finished_update)
         self.client.update()
         self.do_notify('processing')
         return False
 
     def do_install(self):
-        self.client.connect("finished", self.on_finished_install)
         self.client.install(self.packages)
         self.do_notify('processing')
         return False
 
     def do_remove(self):
-        self.client.connect("finished", self.on_finished_remove)
         self.client.remove(self.packages)
         self.do_notify('processing')
         return False
 
     def do_refresh(self):
-        self.client.connect("finished", self.on_finished_refresh)
         self.client.refresh()
         self.do_notify('processing')
 
@@ -165,7 +150,8 @@ class PamacClient(GObject.GObject):
     _interface_name = 'org.manjaro.pamac'
 
     __gsignals__ = {
-        'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
+        'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str)),
+        'refresh-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
     }
 
     def __init__(self):
@@ -232,9 +218,9 @@ class PamacClient(GObject.GObject):
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
-            self.emit("finished", "exit-error", error)
+            self.emit("refresh-finished", "exit-error", error)
         else:
-            self.emit("finished", "exit-success")
+            self.emit("refresh-finished", "exit-success")
 
     def transaction_prepare(self, flags, to_install, to_remove, to_load):
         """
