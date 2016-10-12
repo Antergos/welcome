@@ -21,9 +21,9 @@ import sys, os
 import gi
 
 gi.require_version('Polkit', '1.0')
-from gi.repository import GObject, Gio, GLib, Polkit, Notify
+gi.require_version('Notify', '0.7')
 
-from progress import SimpleProgressDialog
+from gi.repository import GObject, Gio, GLib, Polkit, Notify
 
 def _(x):
     return x
@@ -39,7 +39,6 @@ class SimplePamac(GObject.GObject):
         self.client = PamacClient()
         if self.packages:
             print('Processing: ' + ', '.join(self.packages))
-        self.progress = SimpleProgressDialog(self)
 
     def on_error(self, error):
         my_message = str(error)
@@ -54,8 +53,8 @@ class SimplePamac(GObject.GObject):
         msg_dialog.destroy()
 
     def on_finished_refresh(self, status, error):
+        self.do_notify(status)
         if status != 'exit-success':
-            self.do_notify(status)
             self.loop.quit()
             return False
         # Refresh finished, let's install
@@ -63,26 +62,25 @@ class SimplePamac(GObject.GObject):
         return True
 
     def on_finished_update(self, client, status, error):
-        print("SimplePamac.on_finished_update!")
+        self.do_notify(status)
+        self.loop.quit()
         if status != 'exit-success':
-            self.do_notify(status)
-            self.loop.quit()
             return False
         return True
 
     def on_finished_install(self, client, status, error):
+        self.do_notify(status)
         self.loop.quit()
         if status != 'exit-success':
             return False
-        else:
-            self.do_notify(status)
+        return True
 
     def on_finished_remove(self, client, status, error):
+        self.do_notify(status)
         self.loop.quit()
         if status != 'exit-success':
             return False
-        else:
-            self.do_notify(status)
+        return True
 
     def do_notify(self, status):
         print('Status: ' + status)
@@ -90,10 +88,14 @@ class SimplePamac(GObject.GObject):
             title = _('Install')
             noun = _('Installation of ')
             action = _('installed.')
-        else:
+        elif self.action == 'remove':
             title = _('Remove')
             noun = _('Removal of ')
             action = _('removed.')
+        elif self.action == 'update':
+            title = _('Update')
+            noun = _('Update of ')
+            action = _('updated.')
 
         notify = None
         if status == 'exit-success':
@@ -102,6 +104,9 @@ class SimplePamac(GObject.GObject):
         elif status == 'exit-cancelled':
             Notify.init(title + ' ' + _('cancelled'))
             notify = Notify.Notification.new(title + ' ' + _('cancelled'), noun + ', '.join(self.packages) + ' ' + _('was cancelled.'), 'dialog-information')
+        elif status == 'processing':
+            Notify.init(title + ' ' + _('started'))
+            notify = Notify.Notification.new(title + ' ' + _('started'), noun + ', '.join(self.packages) + ' ' + _('has started.'), 'dialog-information')
         else:
             Notify.init(title + ' ' + _('failed'))
             notify = Notify.Notification.new(title + ' ' + _('failed'), noun + ', '.join(self.packages) + ' ' + _('failed.'), 'dialog-error')
@@ -111,41 +116,25 @@ class SimplePamac(GObject.GObject):
     def do_update(self):
         self.client.connect("finished", self.on_finished_update)
         self.client.update()
-        self.progress.show_all()
-        self.progress.run()
-
-        #update_dialog = AptProgressDialog(apt_update)
-        #update_dialog.run(close_on_finished=True, show_error=True,
-        #            reply_handler=lambda: True,
-        #        error_handler=self.on_error,
-        #        )
+        self.do_notify('processing')
         return False
 
     def do_install(self):
-        apt_install = self.client.install_packages(self.packages)
-        apt_install.connect("finished", self.on_finished_install)
-
-        install_dialog = AptProgressDialog(apt_install)
-        install_dialog.run(close_on_finished=True, show_error=True,
-                        reply_handler=lambda: True,
-                        error_handler=self.on_error,
-                        )
+        self.client.connect("finished", self.on_finished_install)
+        self.client.install(self.packages)
+        self.do_notify('processing')
         return False
 
     def do_remove(self):
-        apt_remove = self.client.remove_packages(self.packages)
-        apt_remove.connect("finished", self.on_finished_remove)
-
-        remove_dialog = AptProgressDialog(apt_remove)
-        remove_dialog.run(close_on_finished=True, show_error=True,
-                        reply_handler=lambda: True,
-                        error_handler=self.on_error,
-                        )
+        self.client.connect("finished", self.on_finished_remove)
+        self.client.remove(self.packages)
+        self.do_notify('processing')
         return False
 
     def do_refresh(self):
+        self.client.connect("finished", self.on_finished_refresh)
         self.client.refresh()
-        apt_update.connect("finished", self.on_finished_refresh)
+        self.do_notify('processing')
 
     def run_action(self):
         if self.action == "install":
@@ -153,7 +142,7 @@ class SimplePamac(GObject.GObject):
         elif self.action == "remove":
             self.remove_packages()
         elif self.action == "update":
-            self.do_update()
+            self.update_packages()
 
     def install_packages(self):
         if self.refresh_before_install:
@@ -164,6 +153,10 @@ class SimplePamac(GObject.GObject):
 
     def remove_packages(self):
         GLib.timeout_add(self._timeout, self.do_remove)
+        self.loop.run()
+
+    def update_packages(self):
+        GLib.timeout_add(self._timeout, self.do_update)
         self.loop.run()
 
 class PamacClient(GObject.GObject):
