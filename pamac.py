@@ -194,8 +194,7 @@ class PamacClient(GObject.GObject):
                 title = _("Cannot connect with Pamac")
                 Notify.init(title)
                 notify = Notify.Notification.new(title, msg, 'dialog-error')
-
-        notify.show()
+                notify.show()
 
     def signal_subscribe(self, signal_name, callback, user_data=None):
         if self.bus and self.pamac_ok:
