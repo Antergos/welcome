@@ -37,8 +37,6 @@ class SimplePamac(GObject.GObject):
         self.refresh_before_install = False
         self.loop = GLib.MainLoop()
         self.client = PamacClient()
-        if self.packages:
-            print('Processing: ' + ', '.join(self.packages))
         self.client.connect("finished", self.on_finished)
         self.client.connect("refresh-finished", self.on_finished_refresh)
 
@@ -122,12 +120,13 @@ class SimplePamac(GObject.GObject):
         self.do_notify('processing')
 
     def run_action(self):
-        if self.action == "install":
-            self.install_packages()
-        elif self.action == "remove":
-            self.remove_packages()
-        elif self.action == "update":
-            self.update_packages()
+        if self.client.pamac_ok:
+            if self.action == "install":
+                self.install_packages()
+            elif self.action == "remove":
+                self.remove_packages()
+            elif self.action == "update":
+                self.update_packages()
 
     def install_packages(self):
         if self.refresh_before_install:
@@ -157,6 +156,7 @@ class PamacClient(GObject.GObject):
     def __init__(self):
         GObject.GObject.__init__(self)
         self.interface = None
+        self.pamac_ok = False
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
 
@@ -169,16 +169,36 @@ class PamacClient(GObject.GObject):
                 PamacClient._interface_name,
                 None)
 
-            self.signal_subscribe("RefreshFinished", self.on_refresh_finished)
-            self.signal_subscribe("TransPrepareFinished", self.on_transaction_prepare_finished)
-            self.signal_subscribe("TransCommitFinished", self.on_transaction_commit_finished)
-            self.signal_subscribe("GetUpdatesFinished", self.on_get_updates_finished)
+            if not self.dbus_proxy.get_name_owner():
+                self.pamac_ok = False
+            else:
+                self.pamac_ok = True
+                self.signal_subscribe(
+                    "RefreshFinished",
+                    self.on_refresh_finished)
+                self.signal_subscribe(
+                    "TransPrepareFinished",
+                    self.on_transaction_prepare_finished)
+                self.signal_subscribe(
+                    "TransCommitFinished",
+                    self.on_transaction_commit_finished)
+                self.signal_subscribe(
+                    "GetUpdatesFinished",
+                    self.on_get_updates_finished)
         except Exception as err:
             print(err)
-            print("Can't find pamac. Is it really installed?")
+        finally:
+            if not self.pamac_ok:
+                msg = _("Can't find pamac. Is it really installed?")
+                print(msg)
+                title = _("Cannot connect with Pamac")
+                Notify.init(title)
+                notify = Notify.Notification.new(title, msg, 'dialog-error')
+
+        notify.show()
 
     def signal_subscribe(self, signal_name, callback, user_data=None):
-        if self.bus:
+        if self.bus and self.pamac_ok:
             self.bus.signal_subscribe(
                 PamacClient._name, # sender
                 PamacClient._interface_name, # interface_name
@@ -191,7 +211,8 @@ class PamacClient(GObject.GObject):
                 None) # user_data_free_func
 
     def call_sync(self, method_name, params=None):
-        if self.dbus_proxy:
+        if self.dbus_proxy and self.pamac_ok:
+            res = False
             try:
                 # print(method_name, "called!")
                 res = self.dbus_proxy.call_sync(

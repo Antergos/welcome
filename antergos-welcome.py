@@ -30,6 +30,8 @@ import sys
 import urllib.request
 import urllib.error
 import webbrowser
+import locale
+import gettext
 
 from pamac import SimplePamac
 
@@ -39,6 +41,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
 from gi.repository import Gtk, GLib, WebKit2
+
+# Useful vars for gettext (translations)
+_APP_NAME = "antergos-welcome"
+_LOCALE_DIR = "/usr/share/locale"
 
 
 class WelcomeConfig(object):
@@ -247,6 +253,16 @@ class WelcomeApp(object):
 
         self._window = w
         self._appView = mv
+
+    def setup_gettext(self):
+        """ This allows to translate all py texts (not the glade ones) """
+
+        gettext.textdomain(_APP_NAME)
+        gettext.bindtextdomain(_APP_NAME, _LOCALE_DIR)
+
+        locale_code, encoding = locale.getdefaultlocale()
+        lang = gettext.translation(_APP_NAME, _LOCALE_DIR, [locale_code], None, True)
+        lang.install()
 
     def run(self):
         signal.signal(signal.SIGINT, signal.SIG_DFL)
