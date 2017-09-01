@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.antergos.desktop
+Exec=/usr/bin/antergos-desktop-dbus -d -v
+User=root
