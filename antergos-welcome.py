@@ -1,24 +1,25 @@
-#!/usr/bin/python3
-# -*- coding:utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright 2012-2013 "Korora Project" <dev@kororaproject.org>
-# Copyright 2013 "Manjaro Linux" <support@manjaro.org>
-# Copyright 2014-2016 Antergos <devs@antergos.com>
-# Copyright 2015 Martin Wimpress <code@flexion.org>
+#  antergos-welcome.py
 #
-# Antergos-welcome is free software: you can redistribute it and/or modify
-# it under the temms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  Copyright 2012-2013 "Korora Project" <dev@kororaproject.org>
+#  Copyright 2013 "Manjaro Linux" <support@manjaro.org>
+#  Copyright 2014-2016 Antergos <devs@antergos.com>
+#  Copyright 2015 Martin Wimpress <code@flexion.org>
 #
-# Antergos-welcome is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+#  Antergos-welcome is free software: you can redistribute it and/or modify
+#  it under the temms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# You should have received a copy of the GNU General Public License
-# along with Antergos-welcome. If not, see <http://www.gnu.org/licenses/>.
+#  Antergos-welcome is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU General Public License for more details.
 #
+#  You should have received a copy of the GNU General Public License
+#  along with Antergos-welcome. If not, see <http://www.gnu.org/licenses/>.
 
 """ Welcome screen for Antergos """
 
@@ -40,7 +41,7 @@ from simplejson import dumps as to_json
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, GLib, WebKit2
+from gi.repository import Gtk, Gio, GLib, WebKit2
 
 # Useful vars for gettext (translations)
 _APP_NAME = "antergos-welcome"
@@ -111,7 +112,7 @@ class WelcomeConfig(object):
         return self._live
 
 
-class AppView(WebKit2.WebView):
+class WelcomeWebView(WebKit2.WebView):
     def __init__(self):
         WebKit2.WebView.__init__(self)
 
@@ -161,7 +162,7 @@ class AppView(WebKit2.WebView):
         elif uri == 'kde-help':
             subprocess.Popen(['khelpcenter'])
         elif uri == 'close' or uri == 'quit':
-            Gtk.main_quit()
+            self.quit()
         elif uri == 'toggle-startup':
             # toggle autostart
             self._config.autostart ^= True
@@ -197,62 +198,16 @@ class AppView(WebKit2.WebView):
         else:
             print('Unknown command: %s' % uri)
 
+    def quit(self):
+        w = self.get_toplevel()
+        w.destroy()
 
-class WelcomeApp(object):
-    def __init__(self):
-        # establish our location
-        self._location = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe())))
-
-        # check for relative path
-        if(os.path.exists(os.path.join(self._location, 'data/'))):
-            print('Using relative path for data source.\
-                   Non-production testing.')
-            self._data_path = os.path.join(self._location, 'data/')
-        elif(os.path.exists('/usr/share/antergos-welcome/')):
-            print('Using /usr/share/antergos-welcome/ path.')
-            self._data_path = '/usr/share/antergos-welcome/'
-        else:
-            print('Unable to source the antergos-welcome data directory.')
-            sys.exit(1)
-
-        self._build_app()
-
-    def _build_app(self):
-        # build window
-        w = Gtk.Window()
-        w.set_position(Gtk.WindowPosition.CENTER)
-        w.set_wmclass('Antergos Welcome', 'Antergos Welcome')
-        w.set_title('')
-        w.set_size_request(768, 496)
-
-        icon_dir = os.path.join(self._data_path, 'img/logos', 'antergos.png')
-        w.set_icon_from_file(icon_dir)
-
-        # build webkit container
-        mv = AppView()
-
-        # load our index file
-        file = os.path.abspath(os.path.join(self._data_path, 'index.html'))
-        uri = 'file://' + urllib.request.pathname2url(file)
-        mv.load_uri(uri)
-
-        # build scrolled window widget and add our appview container
-        sw = Gtk.ScrolledWindow()
-        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        sw.add(mv)
-
-        # build a an autoexpanding box and add our scrolled window
-        b = Gtk.VBox(homogeneous=False, spacing=0)
-        b.pack_start(sw, expand=True, fill=True, padding=0)
-
-        # add the box to the parent window and show
-        w.add(b)
-        w.connect('delete-event', self.close)
-        w.show_all()
-
-        self._window = w
-        self._appView = mv
+class WelcomeApp(Gtk.Application):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, application_id="com.antergos.welcome",
+                         flags=Gio.ApplicationFlags.FLAGS_NONE,
+                         **kwargs)
+        self.window = None
 
     def setup_gettext(self):
         """ This allows to translate all py texts (not the glade ones) """
@@ -264,12 +219,96 @@ class WelcomeApp(object):
         lang = gettext.translation(_APP_NAME, _LOCALE_DIR, [locale_code], None, True)
         lang.install()
 
-    def run(self):
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        Gtk.main()
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+
+    def do_activate(self):
+        # We only allow a single window and raise any existing ones
+        if not self.window:
+            # Windows are associated with the application
+            # when the last one is closed the application shuts down
+            self.window = WelcomeWindow(application=self, title="Main Window")
+
+        self.window.present()
+
+
+class WelcomeWindow(Gtk.ApplicationWindow):
+    def __init__(self, *args, **kwargs):
+        Gtk.ApplicationWindow.__init__(self, title="", application=app)
+
+        self.set_data_path()
+
+        # This will be in the windows group and have the "win" prefix
+        max_action = Gio.SimpleAction.new_stateful("maximize", None,
+                                           GLib.Variant.new_boolean(False))
+        max_action.connect("change-state", self.on_maximize_toggle)
+        self.add_action(max_action)
+
+        # Keep it in sync with the actual state
+        self.connect(
+            "notify::is-maximized",
+            lambda obj, pspec: max_action.set_state(GLib.Variant.new_boolean(obj.props.is_maximized)))
+
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_name('antergos-welcome')
+        self.set_title('')
+        self.set_size_request(768, 496)
+
+        icon_dir = os.path.join(self._data_path, 'img/logos', 'antergos.png')
+        if os.path.exists(icon_dir):
+            self.set_icon_from_file(icon_dir)
+        else:
+            print("Cannot load icon file ", icon_dir)
+
+        # build webkit container
+        self.webview = WelcomeWebView()
+
+        # load our index file
+        file = os.path.abspath(os.path.join(self._data_path, 'index.html'))
+        uri = 'file://' + urllib.request.pathname2url(file)
+        self.webview.load_uri(uri)
+
+        # build scrolled window widget and add our appwebview container
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self.webview)
+
+        # build a an autoexpanding box and add our scrolled window
+        b = Gtk.VBox(homogeneous=False, spacing=0)
+        b.pack_start(sw, expand=True, fill=True, padding=0)
+
+        # add the box to the parent window and show
+        self.add(b)
+        self.connect('delete-event', self.close)
+        self.show_all()
+
+    def set_data_path(self):
+        # Wstablish our location
+        self._location = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+        # Check for relative path
+        if(os.path.exists(os.path.join(self._location, 'data/'))):
+            print('Using relative path for data source.\
+                   Non-production testing.')
+            self._data_path = os.path.join(self._location, 'data/')
+        elif(os.path.exists('/usr/share/antergos-welcome/')):
+            print('Using /usr/share/antergos-welcome/ path.')
+            self._data_path = '/usr/share/antergos-welcome/'
+        else:
+            print('Unable to source the antergos-welcome data directory.')
+            sys.exit(1)
+
+    def on_maximize_toggle(self, action, value):
+        action.set_state(value)
+        if value.get_boolean():
+            self.maximize()
+        else:
+            self.unmaximize()
 
     def close(self, p1, p2):
-        Gtk.main_quit(p1, p2)
+        self.destroy()
+
 
 app = WelcomeApp()
-app.run()
+app.run(sys.argv)
