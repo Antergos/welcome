@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo python -Wall antergos-desktop-dbus.py $1 $2 $3 $4
+sudo python -Wall antergos-welcomed.py $1 $2 $3 $4

@@ -3,18 +3,18 @@
 #
 # Copyright 2014-2016 Antergos <devs@antergos.com>
 #
-# Antergos Welcome is free software: you can redistribute it and/or modify
+# Antergos-welcome is free software: you can redistribute it and/or modify
 # it under the temms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Antergos Welcome is distributed in the hope that it will be useful,
+# Antergos-welcome is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Antergos Welcome. If not, see <http://www.gnu.org/licenses/>.
+# along with Antergos-welcome. If not, see <http://www.gnu.org/licenses/>.
 #
 
 import sys, os
@@ -28,7 +28,7 @@ from gi.repository import GObject, Gio, GLib, Polkit, Notify
 def _(x):
     return x
 
-class SimplePamac(GObject.GObject):
+class SimpleWelcomed(GObject.GObject):
     def __init__(self, packages, action=""):
         GObject.GObject.__init__(self)
         self._timeout = 100
@@ -36,7 +36,7 @@ class SimplePamac(GObject.GObject):
         self.action = action
         self.refresh_before_install = False
         self.loop = GLib.MainLoop()
-        self.client = PamacClient()
+        self.client = WelcomedClient()
         self.client.connect("finished", self.on_finished)
         self.client.connect("refresh-finished", self.on_finished_refresh)
 
@@ -120,7 +120,7 @@ class SimplePamac(GObject.GObject):
         self.do_notify('processing')
 
     def run_action(self):
-        if self.client.pamac_ok:
+        if self.client.welcomed_ok:
             if self.action == "install":
                 self.install_packages()
             elif self.action == "remove":
@@ -143,10 +143,10 @@ class SimplePamac(GObject.GObject):
         GLib.timeout_add(self._timeout, self.do_update)
         self.loop.run()
 
-class PamacClient(GObject.GObject):
-    _name = 'org.manjaro.pamac'
-    _object_path = '/org/manjaro/pamac'
-    _interface_name = 'org.manjaro.pamac'
+class WelcomedClient(GObject.GObject):
+    _name = 'com.antergos.welcome'
+    _object_path = '/com/antergos/welcome'
+    _interface_name = 'com.antergos.welcome'
 
     __gsignals__ = {
         'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str)),
@@ -156,7 +156,7 @@ class PamacClient(GObject.GObject):
     def __init__(self):
         GObject.GObject.__init__(self)
         self.interface = None
-        self.pamac_ok = False
+        self.welcomed_ok = False
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
 
@@ -164,15 +164,15 @@ class PamacClient(GObject.GObject):
                 self.bus, # connection
                 Gio.DBusProxyFlags.NONE,
                 None, # info
-                PamacClient._name,
-                PamacClient._object_path,
-                PamacClient._interface_name,
+                WelcomedClient._name,
+                WelcomedClient._object_path,
+                WelcomedClient._interface_name,
                 None)
 
             if not self.dbus_proxy.get_name_owner():
-                self.pamac_ok = False
+                self.welcomed_ok = False
             else:
-                self.pamac_ok = True
+                self.welcomed_ok = True
                 self.signal_subscribe(
                     "RefreshFinished",
                     self.on_refresh_finished)
@@ -188,19 +188,19 @@ class PamacClient(GObject.GObject):
         except Exception as err:
             print(err)
         finally:
-            if not self.pamac_ok:
-                msg = _("Can't find pamac. Is it really installed?")
+            if not self.welcomed_ok:
+                msg = _("Can't find Welcome d-bus service. Is it really installed?")
                 print(msg)
-                title = _("Cannot connect with Pamac")
+                title = _("Cannot connect with Welcomed")
                 Notify.init(title)
                 notify = Notify.Notification.new(title, msg, 'dialog-error')
                 notify.show()
 
     def signal_subscribe(self, signal_name, callback, user_data=None):
-        if self.bus and self.pamac_ok:
+        if self.bus and self.welcomed_ok:
             self.bus.signal_subscribe(
-                PamacClient._name, # sender
-                PamacClient._interface_name, # interface_name
+                WelcomedClient._name, # sender
+                WelcomedClient._interface_name, # interface_name
                 signal_name, # member
                 None, # object_path
                 None, # arg0
@@ -210,7 +210,7 @@ class PamacClient(GObject.GObject):
                 None) # user_data_free_func
 
     def call_sync(self, method_name, params=None):
-        if self.dbus_proxy and self.pamac_ok:
+        if self.dbus_proxy and self.welcomed_ok:
             res = False
             try:
                 # print(method_name, "called!")

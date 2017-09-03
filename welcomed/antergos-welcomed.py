@@ -5,14 +5,14 @@
 #
 #  Copyright © 2015-2017 Antergos
 #
-#  This file is part of antergos-welcomed
+#  This file is part of antergos-welcome
 #
-#  antergos-desktop-dbus is free software; you can redistribute it and/or modify
+#  antergos-welcome is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  antergos-desktop-dbus is distributed in the hope that it will be useful,
+#  antergos-welcome is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -24,7 +24,7 @@
 #      by works containing it is required.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with antergos-desktop-dbus; If not, see <http://www.gnu.org/licenses/>.
+#  along with antergos-welcome; If not, see <http://www.gnu.org/licenses/>.
 
 import optparse
 import logging
@@ -42,7 +42,7 @@ from pydbus import SessionBus, SystemBus
 # DBus service
 import service
 
-APP_NAME = "antergos-desktop-dbus"
+APP_NAME = "antergos-welcomed"
 LOCALE_DIR = "/usr/share/locale"
 
 
@@ -126,6 +126,6 @@ if __name__ == '__main__':
     mainloop = GLib.MainLoop()
     bus = SystemBus()
     logging.debug(_("Connected to the system bus"))
-    bus.publish("com.antergos.desktop",service.DBusService(mainloop))
+    bus.publish("com.antergos.welcome", service.DBusService(mainloop))
 
     mainloop.run()

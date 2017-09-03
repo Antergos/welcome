@@ -5,14 +5,14 @@
 #
 #  Copyright © 2015-2017 Antergos
 #
-#  This file is part of antergos-welcomed
+#  This file is part of antergos-welcome
 #
-#  antergos-desktop-dbus is free software; you can redistribute it and/or modify
+#  antergos-welcome is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  antergos-desktop-dbus is distributed in the hope that it will be useful,
+#  antergos-welcome is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -24,7 +24,7 @@
 #      by works containing it is required.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with antergos-desktop-dbus; If not, see <http://www.gnu.org/licenses/>.
+#  along with antergos-welcome; If not, see <http://www.gnu.org/licenses/>.
 
 import json
 import logging
@@ -56,13 +56,13 @@ except ImportError as err:
     sys.exit(-1)
 
 
-INTERFACE = 'com.antergos.desktop'
+INTERFACE = 'com.antergos.welcome'
 
 
 class DBusService():
     """
     <node>
-        <interface name='com.antergos.desktop'>
+        <interface name='com.antergos.welcome'>
             <method name='get_package_exists'>
                 <arg type='s' name='package_name' direction='in'/>
                 <arg type='s' name='response' direction='out'/>
@@ -103,7 +103,7 @@ class DBusService():
     </node>
     """
 
-    def __init__(self, mainloop, object_path="/com/antergos/desktop"):
+    def __init__(self, mainloop, object_path="/com/antergos/welcome"):
         self.alpm = None
         self.updates_available = self.store_loaded = False
         self.mainloop = mainloop
@@ -223,7 +223,10 @@ class DBusService():
     @command_finished.setter
     def command_finished(self, value):
         self._command_finished = value
-        self.PropertiesChanged("com.antergos.desktop", {"command_finished": self.command_finished}, [])
+        self.PropertiesChanged(
+            "com.antergos.welcome",
+            {"command_finished": self.command_finished},
+            [])
 
     # Internal alpm methods ----------------------------------------------------
 
@@ -312,9 +315,10 @@ class DBusService():
     # Polkit -------------------------------------------------------------------
 
     def is_authorized(self, dbus_context, interactive=True):
-        action_id = "com.antergos.desktop.install"
-        details = {'polkit.icon': 'antergos-desktop',
-        'polkit.message': 'antergos-desktop'}
+        action_id = "com.antergos.welcome.install"
+        details = {
+            'polkit.icon': 'antergos-welcome',
+            'polkit.message': 'antergos-welcome'}
 
         return dbus_context.check_authorization(action_id, details, interactive=True)
 

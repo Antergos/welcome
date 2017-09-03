@@ -6,18 +6,18 @@
 # Copyright 2014-2016 Antergos <devs@antergos.com>
 # Copyright 2015 Martin Wimpress <code@flexion.org>
 #
-# Antergos Welcome is free software: you can redistribute it and/or modify
+# Antergos-welcome is free software: you can redistribute it and/or modify
 # it under the temms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Antergos Welcome is distributed in the hope that it will be useful,
+# Antergos-welcome is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Antergos Welcome. If not, see <http://www.gnu.org/licenses/>.
+# along with Antergos-welcome. If not, see <http://www.gnu.org/licenses/>.
 #
 
 """ Welcome screen for Antergos """
@@ -33,7 +33,7 @@ import webbrowser
 import locale
 import gettext
 
-from pamac import SimplePamac
+from client import SimpleWelcomed
 
 from simplejson import dumps as to_json
 
