@@ -41,7 +41,7 @@ from simplejson import dumps as to_json
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, Gio, GLib, WebKit2
+from gi.repository import Gtk, Gdk, Gio, GLib, WebKit2
 
 # Useful vars for gettext (translations)
 _APP_NAME = "antergos-welcome"
@@ -172,21 +172,21 @@ class WelcomeWebView(WebKit2.WebView):
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
             # pacman -Syu
-            pamac = SimplePamac([], "update")
-            pamac.run_action()
+            welcomed = SimpleWelcomed([], "update")
+            welcomed.run_action()
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
             # pacman -S
             packages = uri[len('apt-install?'):].split(",")
             #self.pamac.install(packages)
-            pamac = SimplePamac(packages, "install")
-            pamac.run_action()
+            welcomed = SimpleWelcomed(packages, "install")
+            welcomed.run_action()
         elif uri.startswith('apt-remove?'):
             # pacman -R
             packages = uri[len('apt-remove?'):].split(",")
-            pamac = SimplePamac(packages, "remove")
-            pamac.run_action()
+            welcomed = SimpleWelcomed(packages, "remove")
+            welcomed.run_action()
         elif uri == 'backup':
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':
@@ -227,7 +227,7 @@ class WelcomeApp(Gtk.Application):
         if not self.window:
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = WelcomeWindow(application=self, title="Main Window")
+            self.window = WelcomeWindow(application=self, title="Antergos Welcome")
 
         self.window.present()
 
@@ -252,7 +252,7 @@ class WelcomeWindow(Gtk.ApplicationWindow):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_name('antergos-welcome')
         self.set_title('')
-        self.set_size_request(768, 496)
+        self.set_geometry(768, 496)
 
         icon_dir = os.path.join(self._data_path, 'img/logos', 'antergos.png')
         if os.path.exists(icon_dir):
@@ -281,6 +281,30 @@ class WelcomeWindow(Gtk.ApplicationWindow):
         self.add(b)
         self.connect('delete-event', self.close)
         self.show_all()
+
+
+    def set_geometry(self, width, height):
+        """ Sets Cnchi window geometry """
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_resizable(False)
+        self.set_size_request(width, height)
+        self.set_default_size(width, height)
+
+        geom = Gdk.Geometry()
+        geom.min_width = width
+        geom.min_height = height
+        geom.max_width = width
+        geom.max_height = height
+        geom.base_width = width
+        geom.base_height = height
+        geom.width_inc = 0
+        geom.height_inc = 0
+
+        hints = (Gdk.WindowHints.MIN_SIZE |
+                 Gdk.WindowHints.MAX_SIZE |
+                 Gdk.WindowHints.BASE_SIZE |
+                 Gdk.WindowHints.RESIZE_INC)
+        self.set_geometry_hints(None, geom, hints)
 
     def set_data_path(self):
         # Wstablish our location
