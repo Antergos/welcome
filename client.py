@@ -104,23 +104,23 @@ class SimpleWelcomed(GObject.GObject):
         notify.show()
 
     def do_update(self):
-        self.client.update()
         self.do_notify('processing')
+        self.client.update()
         return False
 
     def do_install(self):
-        self.client.install(self.packages)
         self.do_notify('processing')
+        self.client.install(self.packages)
         return False
 
     def do_remove(self):
-        self.client.remove(self.packages)
         self.do_notify('processing')
+        self.client.remove(self.packages)
         return False
 
     def do_refresh(self):
-        self.client.refresh()
         self.do_notify('processing')
+        self.client.refresh()
 
     def run_action(self):
         if self.client.welcomed_ok:
@@ -152,8 +152,7 @@ class WelcomedClient(GObject.GObject):
     _interface_name = 'com.antergos.welcome'
 
     __gsignals__ = {
-        'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str)),
-        'refresh-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
+        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str,str)),
     }
 
     def __init__(self):
@@ -177,17 +176,8 @@ class WelcomedClient(GObject.GObject):
             else:
                 self.welcomed_ok = True
                 self.signal_subscribe(
-                    "RefreshFinished",
-                    self.on_refresh_finished)
-                self.signal_subscribe(
-                    "TransPrepareFinished",
-                    self.on_transaction_prepare_finished)
-                self.signal_subscribe(
-                    "TransCommitFinished",
-                    self.on_transaction_commit_finished)
-                self.signal_subscribe(
-                    "GetUpdatesFinished",
-                    self.on_get_updates_finished)
+                    "command-finished",
+                    self.on_command_finished)
         except Exception as err:
             print(err)
         finally:
@@ -227,93 +217,53 @@ class WelcomedClient(GObject.GObject):
                 print(err)
             return res
 
-    def get_current_error(self):
-        return self.call_sync("GetCurrentError")
-
     def refresh(self):
         """ pacman -Sy """
-        variant = GLib.Variant("(b)", (False, ))
-        self.call_sync("StartRefresh", variant)
+        rand = -1
+        variant = GLib.Variant("(s)", (rand, ))
+        return self.call_sync("refresh_alpm", variant)
 
-    def on_refresh_finished(
+    def on_command_finished(
             self, connection, sender_name, object_path, interface_name,
             signal_name, parameters, user_data, user_data_free_func):
+        print("parameters", parameters)
+        print("user_data", user_data)
+        """
         if parameters[0] == False:
             error = self.get_current_error()
             print(error)
             self.emit("refresh-finished", "exit-error", error)
         else:
             self.emit("refresh-finished", "exit-success")
-
-    def transaction_prepare(self, flags, to_install, to_remove, to_load):
         """
-        flags = (1 << 4); // Cascade
-        flags |= (1 << 5); // Recurse
-        """
-        variant = GLib.Variant("(iasasas)", (flags, to_install, to_remove, to_load))
-        self.call_sync("StartTransPrepare", variant)
 
-    def on_transaction_prepare_finished(
-            self, connection, sender_name, object_path, interface_name,
-            signal_name, parameters, user_data, user_data_free_func):
-        if parameters[0] == False:
-            error = self.get_current_error()
-            print(error)
-            self.emit("finished", "exit-error", error)
-        else:
-            self.transaction_commit()
+    def install_packages(self, pkgs):
+        """ pacman -S pkgs """
+        variant = GLib.Variant("(as)", pkgs)
+        return self.call_sync("install_packages", variant)
 
-    def transaction_commit(self):
-        self.call_sync("StartTransCommit")
+    def remove_package(self, package):
+        """ pacman -R pkg """
+        variant = GLib.Variant("(s)", pkg)
+        return self.call_sync("remove_package", variant)
 
-    def on_transaction_commit_finished(
-            self, connection, sender_name, object_path, interface_name,
-            signal_name, parameters, user_data, user_data_free_func):
-        if parameters[0] == False:
-            error = self.get_current_error()
-            print(error)
-            self.emit("finished", "exit-error", error)
-        else:
-            self.emit("finished", "exit-success", None)
+    def check_updates(self):
+        return self.call_sync("check_updates")
 
-    def get_updates(self):
-        check_aur_updates = False
-        variant = GLib.Variant("(b)", (check_aur_updates, ))
-        self.call_sync("StartGetUpdates", variant)
-
-    def on_get_updates_finished(
-            self, connection, sender_name, object_path, interface_name,
-            signal_name, parameters, user_data, user_data_free_func):
-        param1 = parameters[0]
-        (unknown, pkgs_info, unknown2) = param1
-        msg = ""
-        pkgs = []
-        for pkg_info in pkgs_info:
-            (pkg, old_ver, new_ver, repo, size) = pkg_info
-            msg += "Update {0} from {1} to {2}\n".format(pkg, old_ver, new_ver)
-            pkgs.append(pkg)
-        print(msg)
-
-    def sys_upgrade_prepare(self):
-        """ on_transaction_prepare_finished will be called when finished """
-        enable_downgrade = True
-        temporary_ignorepkgs = [""]
-        variant = GLib.Variant("(bas)", (enable_downgrade, temporary_ignorepkgs))
-        self.call_sync("StartSysupgradePrepare", variant)
+    def system_upgrade(self):
+        return self.call_sync("system_upgrade")
 
     # ------------------------------------------------------------------------
 
     def install(self, pkgs):
-        """ pacman -S pkgs """
-        flags = 0
-        self.transaction_prepare(flags, pkgs, None, None)
+        self.install_packages(pkgs)
 
     def remove(self, pkgs):
         """ pacman -R pkgs """
-        flags = 0
-        self.transaction_prepare(flags, None, pkgs, None)
+        for pkg in pkgs:
+            self.remove_package(pkg)
 
     def update(self):
         """ pacman -Syu """
         #self.get_updates()
-        self.sys_upgrade_prepare()
+        self.system_upgrade()
