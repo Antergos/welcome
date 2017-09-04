@@ -13,7 +13,7 @@
   <vendor_url>https://www.antergos.com</vendor_url>
   <icon_name>antergos-desktop</icon_name>
 
-  <action id="com.antergos.desktop.update">
+  <action id="com.antergos.welcome.update">
     <_description>Query local and remote application databases for updated applications for the system</_description>
     <_message>To query the application databases for updates, you need to authenticate.</_message>
     <defaults>
@@ -23,7 +23,7 @@
     </defaults>
   </action>
 
-  <action id="com.antergos.desktop.install">
+  <action id="com.antergos.welcome.install">
     <_description>Install or remove applications</_description>
     <_message>To install or remove applications, you need to authenticate.</_message>
     <icon_name>antergos-desktop</icon_name>
