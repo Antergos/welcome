@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.antergos.welcome
+Exec=/usr/bin/antergos-welcomed -d -v
+User=root
