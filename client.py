@@ -40,6 +40,7 @@ class SimpleWelcomed(GObject.GObject):
         self.refresh_before_install = False
         self.loop = GLib.MainLoop()
         self.client = WelcomedClient()
+
         self.client.connect("finished", self.on_finished)
         self.client.connect("refresh-finished", self.on_finished_refresh)
 
@@ -153,6 +154,8 @@ class WelcomedClient(GObject.GObject):
 
     __gsignals__ = {
         'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str,str)),
+        'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str)),
+        'refresh-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
     }
 
     def __init__(self):
