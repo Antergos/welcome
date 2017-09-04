@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Running welcome...
+python -Wall src/antergos-welcome.py $1 $2 $3 $4
+

@@ -1,2 +1,0 @@
-#!/bin/bash
-sudo python -Wall antergos-welcomed.py $1 $2 $3 $4

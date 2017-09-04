@@ -177,10 +177,8 @@ class WelcomedClient(GObject.GObject):
             if not self.dbus_proxy.get_name_owner():
                 self.welcomed_ok = False
             else:
-                self.welcomed_ok = True
-                self.signal_subscribe(
-                    "command-finished",
-                    self.on_command_finished)
+                self.signal_subscribe("command-finished", self.on_command_finished)
+                self.welcomed_ok = self.is_alpm_on()
         except Exception as err:
             print(err)
         finally:
@@ -220,6 +218,10 @@ class WelcomedClient(GObject.GObject):
                 print(err)
             return res
 
+    def is_alpm_on(self):
+        """ Check if we can call alpm """
+        return self.call_sync("is_alpm_on")
+
     def refresh(self):
         """ pacman -Sy """
         rand = -1
@@ -242,12 +244,12 @@ class WelcomedClient(GObject.GObject):
 
     def install_packages(self, pkgs):
         """ pacman -S pkgs """
-        variant = GLib.Variant("(as)", pkgs)
+        variant = GLib.Variant(("as"), (pkgs))
         return self.call_sync("install_packages", variant)
 
     def remove_package(self, package):
         """ pacman -R pkg """
-        variant = GLib.Variant("(s)", pkg)
+        variant = GLib.Variant("(s)", (pkg))
         return self.call_sync("remove_package", variant)
 
     def check_updates(self):
