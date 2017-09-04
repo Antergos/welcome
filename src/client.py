@@ -41,8 +41,7 @@ class SimpleWelcomed(GObject.GObject):
         self.loop = GLib.MainLoop()
         self.client = WelcomedClient()
 
-        self.client.connect("finished", self.on_finished)
-        self.client.connect("refresh-finished", self.on_finished_refresh)
+        self.client.connect("command-finished", self.on_command_finished)
 
     def on_error(self, error):
         my_message = str(error)
@@ -56,6 +55,7 @@ class SimpleWelcomed(GObject.GObject):
         msg_dialog.run()
         msg_dialog.destroy()
 
+    """
     def on_finished_refresh(self, client, status, error):
         self.do_notify(status)
         if status != 'exit-success':
@@ -65,8 +65,9 @@ class SimpleWelcomed(GObject.GObject):
             # Refresh finished, let's install
             GLib.timeout_add(self._timeout, self.do_install)
         return True
+    """
 
-    def on_finished(self, client, status, error):
+    def on_command_finished(self, client, status, error):
         self.do_notify(status)
         self.loop.quit()
         if status != 'exit-success':
@@ -153,9 +154,7 @@ class WelcomedClient(GObject.GObject):
     _interface_name = 'com.antergos.welcome'
 
     __gsignals__ = {
-        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str,str)),
-        'finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str)),
-        'refresh-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
+        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str,str))
     }
 
     def __init__(self):
@@ -174,11 +173,12 @@ class WelcomedClient(GObject.GObject):
                 WelcomedClient._interface_name,
                 None)
 
-            if not self.dbus_proxy.get_name_owner():
+            if not self.dbus_proxy or not self.dbus_proxy.get_name_owner():
                 self.welcomed_ok = False
             else:
                 self.signal_subscribe("command-finished", self.on_command_finished)
-                self.welcomed_ok = self.is_alpm_on()
+                self.is_alpm_on()
+                self.welcomed_ok = True
         except Exception as err:
             print(err)
         finally:
@@ -207,7 +207,7 @@ class WelcomedClient(GObject.GObject):
         if self.dbus_proxy and self.welcomed_ok:
             res = False
             try:
-                # print(method_name, "called!")
+                print(method_name, "called!")
                 res = self.dbus_proxy.call_sync(
                     method_name,
                     params, # GLib.Variant(description, values)
@@ -226,6 +226,7 @@ class WelcomedClient(GObject.GObject):
         """ pacman -Sy """
         rand = -1
         variant = GLib.Variant("(s)", (rand, ))
+        print("refresh_alpm")
         return self.call_sync("refresh_alpm", variant)
 
     def on_command_finished(
@@ -244,12 +245,13 @@ class WelcomedClient(GObject.GObject):
 
     def install_packages(self, pkgs):
         """ pacman -S pkgs """
-        variant = GLib.Variant(("as"), (pkgs))
+        variant = GLib.Variant("as", pkgs)
+        print("install_packages", pkgs)
         return self.call_sync("install_packages", variant)
 
     def remove_package(self, package):
         """ pacman -R pkg """
-        variant = GLib.Variant("(s)", (pkg))
+        variant = GLib.Variant("s", pkg)
         return self.call_sync("remove_package", variant)
 
     def check_updates(self):

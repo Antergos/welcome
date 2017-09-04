@@ -59,7 +59,7 @@ class WelcomeConfig(object):
             self._arch = '32-bit'
 
         # store we are a live CD session
-        self._live = os.path.exists('/bootmnt/antergos')
+        self._live = os.path.exists('/arch')
 
         # store full path to our binary
         self._welcome_bin_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
@@ -312,13 +312,13 @@ class WelcomeWindow(Gtk.ApplicationWindow):
             os.path.abspath(inspect.getfile(inspect.currentframe())))
 
         # Check for relative path
-        if(os.path.exists(os.path.join(self._location, 'data/'))):
+        if(os.path.exists(os.path.join(self._location, '../data/'))):
             print('Using relative path for data source.\
                    Non-production testing.')
-            self._data_path = os.path.join(self._location, 'data/')
-        elif(os.path.exists('/usr/share/antergos-welcome/')):
-            print('Using /usr/share/antergos-welcome/ path.')
-            self._data_path = '/usr/share/antergos-welcome/'
+            self._data_path = os.path.join(self._location, '../data/')
+        elif(os.path.exists('/usr/share/antergos/welcome/')):
+            print('Using /usr/share/antergos/welcome/ path.')
+            self._data_path = '/usr/share/antergos/welcome/'
         else:
             print('Unable to source the antergos-welcome data directory.')
             sys.exit(1)
