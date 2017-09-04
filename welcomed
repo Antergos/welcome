@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Running welcomed...
+sudo python -Wall src/welcomed/antergos-welcomed.py $1 $2 $3 $4
+
