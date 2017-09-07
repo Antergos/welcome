@@ -154,7 +154,7 @@ class WelcomedClient(GObject.GObject):
     _interface_name = 'com.antergos.welcome'
 
     __gsignals__ = {
-        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str,str))
+        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
     }
 
     def __init__(self):
@@ -176,9 +176,12 @@ class WelcomedClient(GObject.GObject):
             if not self.dbus_proxy or not self.dbus_proxy.get_name_owner():
                 self.welcomed_ok = False
             else:
-                self.signal_subscribe("command-finished", self.on_command_finished)
-                self.is_alpm_on()
-                self.welcomed_ok = True
+                self.signal_subscribe(
+                    "org.freedesktop.DBus.Properties",
+                    "PropertiesChanged",
+                    self.on_properties_changed)
+
+                self.welcomed_ok = self.is_alpm_on()
         except Exception as err:
             print(err)
         finally:
@@ -190,21 +193,25 @@ class WelcomedClient(GObject.GObject):
                 notify = Notify.Notification.new(title, msg, 'dialog-error')
                 notify.show()
 
-    def signal_subscribe(self, signal_name, callback, user_data=None):
+    def signal_subscribe(self, interface_name, signal_name, callback, user_data=None):
+        if not interface_name:
+            interface_name = WelcomedClient._interface_name # interface_name
+
         if self.bus and self.welcomed_ok:
-            self.bus.signal_subscribe(
-                WelcomedClient._name, # sender
-                WelcomedClient._interface_name, # interface_name
+            subs = self.bus.signal_subscribe(
+                None, # sender WelcomedClient._name, # sender
+                interface_name,
                 signal_name, # member
-                None, # object_path
+                "/com/antergos/welcome", # object_path
                 None, # arg0
                 0, # flags
                 callback, # callback
                 user_data, # user_data
                 None) # user_data_free_func
+            print(subs)
 
     def call_sync(self, method_name, params=None):
-        if self.dbus_proxy and self.welcomed_ok:
+        if self.dbus_proxy:
             res = False
             try:
                 print(method_name, "called!")
@@ -224,16 +231,17 @@ class WelcomedClient(GObject.GObject):
 
     def refresh(self):
         """ pacman -Sy """
-        rand = -1
-        variant = GLib.Variant("(s)", (rand, ))
         print("refresh_alpm")
-        return self.call_sync("refresh_alpm", variant)
+        return self.call_sync("refresh_alpm")
 
-    def on_command_finished(
-            self, connection, sender_name, object_path, interface_name,
-            signal_name, parameters, user_data, user_data_free_func):
+
+    def on_properties_changed(self, connection, sender_name, object_path,
+        interface_name, signal_name, parameters, user_data, user_data_free_func):
+        print(interface_name)
         print("parameters", parameters)
         print("user_data", user_data)
+
+        self.emit("command-finished")
         """
         if parameters[0] == False:
             error = self.get_current_error()
@@ -245,13 +253,13 @@ class WelcomedClient(GObject.GObject):
 
     def install_packages(self, pkgs):
         """ pacman -S pkgs """
-        variant = GLib.Variant("as", pkgs)
+        variant = GLib.Variant("(as)", (pkgs, ))
         print("install_packages", pkgs)
         return self.call_sync("install_packages", variant)
 
     def remove_package(self, package):
         """ pacman -R pkg """
-        variant = GLib.Variant("s", pkg)
+        variant = GLib.Variant("(s)", (pkg))
         return self.call_sync("remove_package", variant)
 
     def check_updates(self):

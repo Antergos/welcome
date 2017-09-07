@@ -35,6 +35,7 @@ from gi.repository import GLib
 
 try:
     from pydbus import SessionBus, SystemBus
+    from pydbus.generic import signal
 except ImportError as err:
     msg = "Can't import pydbus library: {}".format(err)
     logging.error(msg)
@@ -53,7 +54,7 @@ except ImportError as err:
 INTERFACE = 'com.antergos.welcome'
 
 
-class DBusService():
+class DBusService(object):
     """
     <node>
         <interface name='com.antergos.welcome'>
@@ -90,12 +91,13 @@ class DBusService():
                 <arg type='s' name='package_name' direction='in'/>
                 <arg type='b' name='response' direction='out'/>
             </method>
-            <property name="command_finished" type="sssas" access="readwrite">
+            <property name="command_finished" type="(ssas)" access="read">
                 <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
             </property>
         </interface>
     </node>
     """
+
 
     def __init__(self, mainloop, object_path="/com/antergos/welcome"):
         self.alpm = None
@@ -164,7 +166,7 @@ class DBusService():
         """ Refreshes alpm databases """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
-            self.command_queue.put((uid, 'refresh', ''))
+            self.command_queue.put((uid, 'refresh', []))
             return uid
         else:
             return ""
@@ -173,7 +175,7 @@ class DBusService():
         """ Install the given package. """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
-            self.command_queue.put((uid, 'install', str(package_name)))
+            self.command_queue.put((uid, 'install', [package_name]))
             return uid
         else:
             return ""
@@ -182,7 +184,7 @@ class DBusService():
         """ Uninstall the given package. """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
-            self.command_queue.put((uid, 'remove', str(package_name)))
+            self.command_queue.put((uid, 'remove', [package_name]))
             return uid
         else:
             return ""
@@ -200,7 +202,7 @@ class DBusService():
         """ Install updates """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
-            self.command_queue.put((uid, 'system_upgrade', ''))
+            self.command_queue.put((uid, 'system_upgrade', []))
             return uid
         else:
             return ""
@@ -217,10 +219,11 @@ class DBusService():
     @command_finished.setter
     def command_finished(self, value):
         self._command_finished = value
-        self.PropertiesChanged(
-            "com.antergos.welcome",
-            {"command_finished": self.command_finished},
-            [])
+        #self._command_finished = value
+        logging.debug("command_finished")
+        self.PropertiesChanged("com.antergos.welcome", {"command_finished": self.command_finished}, [])
+
+    PropertiesChanged = signal()
 
     # Internal alpm methods ----------------------------------------------------
 
@@ -275,34 +278,29 @@ class DBusService():
     def _command_queue_worker(self):
         while True:
             if self.lock_ok():
-                uid, command, package = self.command_queue.get()
+                uid, command, packages = self.command_queue.get()
                 if command == 'install':
-                    self._install_package(package)
+                    self._install_package(packages[0])
                     # Send signal to frontends
-                    self._command_finished = (uid, command, package)
+                    self.command_finished = (uid, command, packages)
+                elif command == 'install_packages':
+                    self._install_packages(packages)
+                    self.command_finished = (uid, command, packages)
                 elif command == 'remove':
-                    self._remove_package(package)
-                    # Send signal to frontends
-                    self._command_finished = (uid, command, package)
+                    self._remove_package(packages[0])
+                    self.command_finished = (uid, command, packages)
                 elif command == 'refresh':
                     self._refresh_alpm()
-                    # Send signal to frontends
-                    self._command_finished = (uid, command, '')
+                    self.command_finished = (uid, command, packages)
                 elif command == 'check_updates':
                     output = self._check_updates()
-                    # Send signal to frontends
-                    self._command_finished = (uid, command, output)
-                elif command == 'install_packages':
-                    self._install_packages(package)
-                    # Send signal to frontends
-                    self._command_finished = (uid, command, package)
+                    self.command_finished = (uid, command, packages)
                 elif command == 'system_upgrade':
                     self._system_upgrade()
-                    # Send signal to frontends
-                    self._command_finished = (uid, command, package)
+                    self.command_finished = (uid, command, packages)
                 elif command == 'frontend_loaded':
                     self._do_frontend_loaded()
-                    self._command_finished = (uid, command, package)
+                    self.command_finished = (uid, command, packages)
                 else:
                     logging.error(_("Unknown command %s"), command)
 
@@ -315,6 +313,7 @@ class DBusService():
             'polkit.message': 'antergos-welcome'}
 
         return dbus_context.check_authorization(action_id, details, interactive=True)
+
 
     # db.lck -------------------------------------------------------------------
 
