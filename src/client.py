@@ -28,6 +28,15 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import GObject, Gio, GLib, Polkit, Notify
 
+try:
+    from pydbus import SessionBus, SystemBus
+    from pydbus.generic import signal
+except ImportError as err:
+    msg = "Can't import pydbus library: {}".format(err)
+    logging.error(msg)
+    print(msg)
+    sys.exit(-1)
+
 def _(x):
     return x
 
@@ -70,12 +79,13 @@ class SimpleWelcomed(GObject.GObject):
     def quit(self):
         self.loop.quit()
 
-    def on_command_finished(self, client, status, error):
-        self.do_notify(status)
+    def on_command_finished(self, client, uid, command, pkgs):
+        #print("client", client)
+        #print("uid", uid)
+        #print("command", command)
+        #print("pkgs", pkgs)
+        self.do_notify('exit-success')
         self.loop.quit()
-        if status != 'exit-success':
-            return False
-        return True
 
     def do_notify(self, status):
         print('Status: ' + status)
@@ -157,7 +167,8 @@ class WelcomedClient(GObject.GObject):
     _interface_name = 'com.antergos.welcome'
 
     __gsignals__ = {
-        'command-finished': (GObject.SignalFlags.RUN_FIRST, None, (str,str))
+        'command-finished': (GObject.SignalFlags.RUN_FIRST, None,
+            (str, str, GObject.TYPE_PYOBJECT))
     }
 
     def __init__(self):
@@ -165,111 +176,58 @@ class WelcomedClient(GObject.GObject):
         self.interface = None
         self.welcomed_ok = False
         try:
-            self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-
-            self.dbus_proxy = Gio.DBusProxy.new_sync(
-                self.bus, # connection
-                Gio.DBusProxyFlags.NONE,
-                None, # info
+            self.bus = SystemBus()
+            self.dbus_proxy = self.bus.get(
                 WelcomedClient._name,
-                WelcomedClient._object_path,
-                WelcomedClient._interface_name,
-                None)
+                WelcomedClient._object_path)
 
-            if not self.dbus_proxy or not self.dbus_proxy.get_name_owner():
+            if not self.dbus_proxy:
                 self.welcomed_ok = False
             else:
-                self.signal_subscribe(
-                    "org.freedesktop.DBus.Properties",
-                    "PropertiesChanged",
-                    self.on_properties_changed)
-
-                self.welcomed_ok = self.is_alpm_on()
+                self.dbus_proxy.PropertiesChanged.connect(self.on_properties_changed)
+                self.welcomed_ok = self.dbus_proxy.is_alpm_on()
         except Exception as err:
             print(err)
         finally:
             if not self.welcomed_ok:
                 msg = _("Can't find Welcome d-bus service. Is it really installed?")
                 print(msg)
-                title = _("Cannot connect with Welcomed")
-                Notify.init(title)
+                Notify.init(_("Cannot connect with Welcomed"))
                 notify = Notify.Notification.new(title, msg, 'dialog-error')
                 notify.show()
-
-    def signal_subscribe(self, interface_name, signal_name, callback, user_data=None):
-        if not interface_name:
-            interface_name = WelcomedClient._interface_name # interface_name
-
-        if self.bus and self.welcomed_ok:
-            subs = self.bus.signal_subscribe(
-                None, # sender WelcomedClient._name, # sender
-                interface_name,
-                signal_name, # member
-                "/com/antergos/welcome", # object_path
-                None, # arg0
-                0, # flags
-                callback, # callback
-                user_data, # user_data
-                None) # user_data_free_func
-            print(subs)
-
-    def call_sync(self, method_name, params=None):
-        if self.dbus_proxy:
-            res = False
-            try:
-                print(method_name, "called!")
-                res = self.dbus_proxy.call_sync(
-                    method_name,
-                    params, # GLib.Variant(description, values)
-                    Gio.DBusCallFlags.NONE,
-                    -1,
-                    None)
-            except Exception as err:
-                print(err)
-            return res
-
-    def is_alpm_on(self):
-        """ Check if we can call alpm """
-        return self.call_sync("is_alpm_on")
 
     def refresh(self):
         """ pacman -Sy """
         print("refresh_alpm")
-        return self.call_sync("refresh_alpm")
+        return self.dbus_proxy.refresh_alpm()
 
-
-    def on_properties_changed(self, connection, sender_name, object_path,
-        interface_name, signal_name, parameters, user_data, user_data_free_func):
-        print(interface_name)
-        print("parameters", parameters)
-        print("user_data", user_data)
-
-        self.emit("command-finished")
-        """
-        if parameters[0] == False:
-            error = self.get_current_error()
-            print(error)
-            self.emit("refresh-finished", "exit-error", error)
-        else:
-            self.emit("refresh-finished", "exit-success")
-        """
+    def on_properties_changed(self, *params):
+        """ A d-bus server property has changed """
+        (sender, prop, not_used) = params
+        if sender == WelcomedClient._name and 'command_finished' in prop.keys():
+            (uid, command, pkgs) = prop['command_finished']
+            self.emit("command-finished", uid, command, pkgs)
 
     def install_packages(self, pkgs):
         """ pacman -S pkgs """
-        variant = GLib.Variant("(as)", (pkgs, ))
-        print("install_packages", pkgs)
-        return self.call_sync("install_packages", variant)
+        #variant = GLib.Variant("(as)", (pkgs, ))
+        #print("install_packages", pkgs)
+        #return self.call_sync("install_packages", variant)
+        return self.dbus_proxy.install_packages(pkgs)
 
     def remove_package(self, package):
         """ pacman -R pkg """
-        variant = GLib.Variant("(s)", (pkg))
-        return self.call_sync("remove_package", variant)
+        #variant = GLib.Variant("(s)", (pkg))
+        #return self.call_sync("remove_package", variant)
+        return self.dbus_proxy.remove_package(package)
 
     def check_updates(self):
-        return self.call_sync("check_updates")
+        #return self.call_sync("check_updates")
+        return self.dbus_proxy.check_updates()
 
     def system_upgrade(self):
-        return self.call_sync("system_upgrade")
+        #return self.call_sync("system_upgrade")
+        return self.dbus_proxy.system_upgrade()
 
     # ------------------------------------------------------------------------
 

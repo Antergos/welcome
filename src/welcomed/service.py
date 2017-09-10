@@ -219,7 +219,6 @@ class DBusService(object):
     @command_finished.setter
     def command_finished(self, value):
         self._command_finished = value
-        #self._command_finished = value
         logging.debug("command_finished")
         self.PropertiesChanged("com.antergos.welcome", {"command_finished": self.command_finished}, [])
 
