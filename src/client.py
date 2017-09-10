@@ -67,6 +67,9 @@ class SimpleWelcomed(GObject.GObject):
         return True
     """
 
+    def quit(self):
+        self.loop.quit()
+
     def on_command_finished(self, client, status, error):
         self.do_notify(status)
         self.loop.quit()

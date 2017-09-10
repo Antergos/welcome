@@ -118,6 +118,8 @@ class WelcomeWebView(WebKit2.WebView):
 
         self._config = WelcomeConfig()
 
+        self.welcomed = []
+
         self.connect('load-changed', self._load_changed_cb)
         self.connect('load-failed', self._load_failed_cb)
 
@@ -172,21 +174,21 @@ class WelcomeWebView(WebKit2.WebView):
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
             # pacman -Syu
-            welcomed = SimpleWelcomed([], "update")
-            welcomed.run_action()
+            self.welcomed.append(SimpleWelcomed([], "update"))
+            self.welcomed[-1].run_action()
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")
         elif uri.startswith('apt-install?'):
             # pacman -S
             packages = uri[len('apt-install?'):].split(",")
             #self.pamac.install(packages)
-            welcomed = SimpleWelcomed(packages, "install")
-            welcomed.run_action()
+            self.welcomed.append(SimpleWelcomed(packages, "install"))
+            self.welcomed[-1].run_action()
         elif uri.startswith('apt-remove?'):
             # pacman -R
             packages = uri[len('apt-remove?'):].split(",")
-            welcomed = SimpleWelcomed(packages, "remove")
-            welcomed.run_action()
+            self.welcomed.append(SimpleWelcomed(packages, "remove"))
+            self.welcomed[-1].run_action()
         elif uri == 'backup':
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'firewall':
@@ -199,8 +201,11 @@ class WelcomeWebView(WebKit2.WebView):
             print('Unknown command: %s' % uri)
 
     def quit(self):
+        for client in self.welcomed:
+            client.quit()
         w = self.get_toplevel()
-        w.destroy()
+        #w.destroy()
+        w.quit()
 
 class WelcomeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -330,8 +335,9 @@ class WelcomeWindow(Gtk.ApplicationWindow):
         else:
             self.unmaximize()
 
-    def close(self, p1, p2):
+    def quit(self):
         self.destroy()
+
 
 
 app = WelcomeApp()
