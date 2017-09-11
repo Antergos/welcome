@@ -381,7 +381,7 @@ class Pac(object):
             return False
         transaction.sysupgrade(downgrade)
         if len(transaction.to_add) + len(transaction.to_remove) == 0:
-            print("nothing to do")
+            logging.debug("system_upgrade: nothing to do")
             transaction.release()
             return 0
         else:

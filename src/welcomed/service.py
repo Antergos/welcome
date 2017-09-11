@@ -28,6 +28,8 @@ import sys
 import threading
 import uuid
 from queue import Queue
+import time
+import errno
 
 import gi
 gi.require_version('GLib', '2.0')
@@ -91,7 +93,7 @@ class DBusService(object):
                 <arg type='s' name='package_name' direction='in'/>
                 <arg type='b' name='response' direction='out'/>
             </method>
-            <property name="command_finished" type="(ssas)" access="read">
+            <property name="command_finished" type="(ssas)" access="readwrite">
                 <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
             </property>
         </interface>
@@ -198,10 +200,11 @@ class DBusService(object):
         else:
             return ""
 
-    def system_upgrade(self, package_names, dbus_context):
+    def system_upgrade(self, dbus_context):
         """ Install updates """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
+#            self.command_queue.put((uid, 'refresh', []))
             self.command_queue.put((uid, 'system_upgrade', []))
             return uid
         else:
@@ -220,6 +223,7 @@ class DBusService(object):
     def command_finished(self, value):
         self._command_finished = value
         logging.debug("command_finished")
+        print(value)
         self.PropertiesChanged("com.antergos.welcome", {"command_finished": self.command_finished}, [])
 
     PropertiesChanged = signal()

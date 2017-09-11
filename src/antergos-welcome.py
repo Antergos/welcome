@@ -174,7 +174,9 @@ class WelcomeWebView(WebKit2.WebView):
             print(uri, "NOT IMPLEMENTED!")
         elif uri == 'update':
             # pacman -Syu
-            self.welcomed.append(SimpleWelcomed([], "update"))
+            self.welcomed.append(SimpleWelcomed([], "refresh"))
+            self.welcomed[-1].run_action()
+            self.welcomed.append(SimpleWelcomed([], "system_upgrade"))
             self.welcomed[-1].run_action()
         elif uri == 'language':
             print(uri, "NOT IMPLEMENTED!")

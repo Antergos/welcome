@@ -49,8 +49,8 @@ class SimpleWelcomed(GObject.GObject):
         self.refresh_before_install = False
         self.loop = GLib.MainLoop()
         self.client = WelcomedClient()
-
         self.client.connect("command-finished", self.on_command_finished)
+        Notify.init("antergos-welcome")
 
     def on_error(self, error):
         my_message = str(error)
@@ -64,101 +64,133 @@ class SimpleWelcomed(GObject.GObject):
         msg_dialog.run()
         msg_dialog.destroy()
 
-    """
-    def on_finished_refresh(self, client, status, error):
-        self.do_notify(status)
-        if status != 'exit-success':
-            self.loop.quit()
-            return False
-        if self.packages:
-            # Refresh finished, let's install
-            GLib.timeout_add(self._timeout, self.do_install)
-        return True
-    """
-
     def quit(self):
+        """ called when the app quits """
+        Notify.uninit()
         self.loop.quit()
 
     def on_command_finished(self, client, uid, command, pkgs):
-        #print("client", client)
-        #print("uid", uid)
-        #print("command", command)
-        #print("pkgs", pkgs)
-        self.do_notify('exit-success')
+        print(uid, " on_command_finished: ", command)
+
+        self.notify(command, 'exit-success')
         self.loop.quit()
 
-    def do_notify(self, status):
-        print('Status: ' + status)
-        if self.action == 'install':
-            title = _('Install')
-            noun = _('Installation of ')
-            action = _('installed.')
-        elif self.action == 'remove':
-            title = _('Remove')
-            noun = _('Removal of ')
-            action = _('removed.')
-        elif self.action == 'update':
-            title = _('Update')
-            noun = _('Update of ')
-            action = _('updated.')
+    def prepare_message(self, command, status):
+        dialog_type = 'dialog-information'
+        title = ""
+        msg = ""
+        if command == 'install' or command == 'install_packages' or command == 'install_package':
+            if status == 'exit-success':
+                title = _("Installation succeeded!")
+                if len(self.packages) > 1:
+                    msg =  _('{} have been successfully installed').format(' '.join(self.packages))
+                else:
+                    msg = _('{} has been successfully installed').format(self.packages[0])
+            elif status == 'processing':
+                title = _("Installation")
+                msg = _("Installing {} package(s)").format(' '.join(self.packages))
+            else:
+                title = _("Installation failed!")
+                msg = _("Cannot install {} package(s)").format(' '.join(self.packages))
+                dialog_type = 'dialog-error'
+        elif command == 'remove' or command == 'remove_packages' or command == 'remove_package':
+            if status == 'exit-success':
+                title = _("Removal succeeded!")
+                if len(self.packages) > 1:
+                    msg =  _('{} have been successfully removed').format(' '.join(self.packages))
+                else:
+                    msg = _('{} has been successfully removed').format(self.packages[0])
+            elif status == 'processing':
+                title = _("Removal")
+                msg = _("Removing {} package(s)").format(' '.join(self.packages))
+            else:
+                title = _("Removal failed!")
+                msg = _("Cannot remove {} package(s)").format(' '.join(self.packages))
+                dialog_type = 'dialog-error'
+        elif command == 'refresh' or command == 'refresh_alpm':
 
-        notify = None
-        if status == 'exit-success':
-            Notify.init(title + ' ' + _('complete'))
-            notify = Notify.Notification.new(title + ' ' + _('complete'), ', '.join(self.packages) + ' ' + _('has been successfully ') + action, 'dialog-information')
-        elif status == 'exit-cancelled':
-            Notify.init(title + ' ' + _('cancelled'))
-            notify = Notify.Notification.new(title + ' ' + _('cancelled'), noun + ', '.join(self.packages) + ' ' + _('was cancelled.'), 'dialog-information')
-        elif status == 'processing':
-            Notify.init(title + ' ' + _('started'))
-            notify = Notify.Notification.new(title + ' ' + _('started'), noun + ', '.join(self.packages) + ' ' + _('has started.'), 'dialog-information')
+            if status == 'exit-success':
+                title = _("System refresh succeeded!")
+                msg = _("System databases updated successfully")
+            elif status == 'processing':
+                title = _("System refresh")
+                msg = _("Updating system databases...")
+            else:
+                title = _("System refresh failed!")
+                msg = _("Cannot update system databases!")
+                dialog_type = 'dialog-error'
+        elif command == 'system_upgrade':
+
+            if status == 'exit-success':
+                title = _("System upgrade succeeded!")
+                msg = _("System upgraded successfully")
+            elif status == 'processing':
+                title = _("System upgrade")
+                msg = _("Upgrading system...")
+            else:
+                title = _("System upgrade failed!")
+                msg = _("Cannot upgrade system!")
+                dialog_type = 'dialog-error'
         else:
-            Notify.init(title + ' ' + _('failed'))
-            notify = Notify.Notification.new(title + ' ' + _('failed'), noun + ', '.join(self.packages) + ' ' + _('failed.'), 'dialog-error')
+            title = _("Unknown action!")
+            msg = _("Action '{}' is unknown").format(command)
+            dialog_type = 'dialog-error'
 
-        notify.show()
+        return (title, msg, dialog_type)
 
-    def do_update(self):
-        self.do_notify('processing')
-        self.client.update()
+    def notify(self, command, status):
+        # print('Status: ' + status)
+        (title, msg, dialog_type) = self.prepare_message(command, status)
+        Notify.Notification.new(title, msg, dialog_type).show()
+
+    def _do_install_packages(self):
+        self.notify('install', 'processing')
+        self.client.install_packages(self.packages)
         return False
 
-    def do_install(self):
-        self.do_notify('processing')
-        self.client.install(self.packages)
+    def _do_remove_packages(self):
+        self.notify('remove', 'processing')
+        self.client.remove_packages(self.packages)
         return False
 
-    def do_remove(self):
-        self.do_notify('processing')
-        self.client.remove(self.packages)
-        return False
-
-    def do_refresh(self):
-        self.do_notify('processing')
+    def _do_refresh(self):
+        self.notify('refresh', 'processing')
         self.client.refresh()
+        return False
+
+    def _do_system_upgrade(self):
+        self.notify('system_upgrade', 'processing')
+        self.client.system_upgrade()
+        return False
 
     def run_action(self):
         if self.client.welcomed_ok:
-            if self.action == "install":
+            if self.action == "refresh":
+                self.refresh()
+            elif self.action == "system_upgrade":
+                self.system_upgrade()
+            elif self.action == "install":
                 self.install_packages()
             elif self.action == "remove":
                 self.remove_packages()
-            elif self.action == "update":
-                self.update_packages()
+
+    def refresh(self):
+        GLib.timeout_add(self._timeout, self._do_refresh)
+        self.loop.run()
 
     def install_packages(self):
         if self.refresh_before_install:
-            GLib.timeout_add(self._timeout, self.do_refresh)
+            GLib.timeout_add(self._timeout, self._do_refresh)
         else:
-            GLib.timeout_add(self._timeout, self.do_install)
+            GLib.timeout_add(self._timeout, self._do_install_packages)
         self.loop.run()
 
     def remove_packages(self):
-        GLib.timeout_add(self._timeout, self.do_remove)
+        GLib.timeout_add(self._timeout, self._do_remove_packages)
         self.loop.run()
 
-    def update_packages(self):
-        GLib.timeout_add(self._timeout, self.do_update)
+    def system_upgrade(self):
+        GLib.timeout_add(self._timeout, self._do_system_upgrade)
         self.loop.run()
 
 class WelcomedClient(GObject.GObject):
@@ -191,55 +223,41 @@ class WelcomedClient(GObject.GObject):
         finally:
             if not self.welcomed_ok:
                 msg = _("Can't find Welcome d-bus service. Is it really installed?")
-                print(msg)
                 Notify.init(_("Cannot connect with Welcomed"))
                 notify = Notify.Notification.new(title, msg, 'dialog-error')
                 notify.show()
 
     def refresh(self):
         """ pacman -Sy """
-        print("refresh_alpm")
         return self.dbus_proxy.refresh_alpm()
 
     def on_properties_changed(self, *params):
         """ A d-bus server property has changed """
         (sender, prop, not_used) = params
+        print("PARAMS:", params)
         if sender == WelcomedClient._name and 'command_finished' in prop.keys():
             (uid, command, pkgs) = prop['command_finished']
             self.emit("command-finished", uid, command, pkgs)
 
+    def install_package(self, pkg):
+        """ pacman -S pkg """
+        return self.dbus_proxy.install_package(pkgs)
+
     def install_packages(self, pkgs):
         """ pacman -S pkgs """
-        #variant = GLib.Variant("(as)", (pkgs, ))
-        #print("install_packages", pkgs)
-        #return self.call_sync("install_packages", variant)
         return self.dbus_proxy.install_packages(pkgs)
 
     def remove_package(self, package):
         """ pacman -R pkg """
-        #variant = GLib.Variant("(s)", (pkg))
-        #return self.call_sync("remove_package", variant)
         return self.dbus_proxy.remove_package(package)
 
-    def check_updates(self):
-        #return self.call_sync("check_updates")
-        return self.dbus_proxy.check_updates()
-
-    def system_upgrade(self):
-        #return self.call_sync("system_upgrade")
-        return self.dbus_proxy.system_upgrade()
-
-    # ------------------------------------------------------------------------
-
-    def install(self, pkgs):
-        self.install_packages(pkgs)
-
-    def remove(self, pkgs):
+    def remove_packages(self, pkgs):
         """ pacman -R pkgs """
         for pkg in pkgs:
             self.remove_package(pkg)
 
-    def update(self):
-        """ pacman -Syu """
-        #self.get_updates()
-        self.system_upgrade()
+    def check_updates(self):
+        return self.dbus_proxy.check_updates()
+
+    def system_upgrade(self):
+        return self.dbus_proxy.system_upgrade()
