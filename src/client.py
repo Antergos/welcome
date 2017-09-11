@@ -70,8 +70,7 @@ class SimpleWelcomed(GObject.GObject):
         self.loop.quit()
 
     def on_command_finished(self, client, uid, command, pkgs):
-        print(uid, " on_command_finished: ", command)
-
+        logging.debug("on_command_finished: %s", command)
         self.notify(command, 'exit-success')
         self.loop.quit()
 
@@ -234,7 +233,7 @@ class WelcomedClient(GObject.GObject):
     def on_properties_changed(self, *params):
         """ A d-bus server property has changed """
         (sender, prop, not_used) = params
-        print("PARAMS:", params)
+        # print("PARAMS:", params)
         if sender == WelcomedClient._name and 'command_finished' in prop.keys():
             (uid, command, pkgs) = prop['command_finished']
             self.emit("command-finished", uid, command, pkgs)
