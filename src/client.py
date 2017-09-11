@@ -70,7 +70,7 @@ class SimpleWelcomed(GObject.GObject):
         self.loop.quit()
 
     def on_command_finished(self, client, uid, command, pkgs):
-        logging.debug("on_command_finished: %s", command)
+        # print("on_command_finished:, command)
         self.notify(command, 'exit-success')
         self.loop.quit()
 
