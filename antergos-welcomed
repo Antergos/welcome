@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo python -Wall /usr/share/antergos/welcomed/antergos-welcomed.py -d -v $1 $2 $3 $4
