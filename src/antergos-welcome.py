@@ -319,13 +319,13 @@ class WelcomeWindow(Gtk.ApplicationWindow):
             os.path.abspath(inspect.getfile(inspect.currentframe())))
 
         # Check for relative path
-        if(os.path.exists(os.path.join(self._location, '../data/'))):
+        if os.path.exists(os.path.join(self._location, '../data/')):
             print('Using relative path for data source.\
                    Non-production testing.')
             self._data_path = os.path.join(self._location, '../data/')
-        elif(os.path.exists('/usr/share/antergos/welcome/')):
-            print('Using /usr/share/antergos/welcome/ path.')
-            self._data_path = '/usr/share/antergos/welcome/'
+        elif os.path.exists('/usr/share/antergos/welcome/data'):
+            print('Using /usr/share/antergos/welcome/data path.')
+            self._data_path = '/usr/share/antergos/welcome/data'
         else:
             print('Unable to source the antergos-welcome data directory.')
             sys.exit(1)

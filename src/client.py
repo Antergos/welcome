@@ -222,9 +222,8 @@ class WelcomedClient(GObject.GObject):
         finally:
             if not self.welcomed_ok:
                 msg = _("Can't find Welcome d-bus service. Is it really installed?")
-                Notify.init(_("Cannot connect with Welcomed"))
-                notify = Notify.Notification.new(title, msg, 'dialog-error')
-                notify.show()
+                Notify.init("antergos-welcome")
+                Notify.Notification.new(_("ERROR!"), msg, 'dialog-error').show()
 
     def refresh(self):
         """ pacman -Sy """
