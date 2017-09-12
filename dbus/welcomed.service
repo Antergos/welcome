@@ -1,0 +1,8 @@
+[Unit]
+Description=Welcome System Session
+
+[Service]
+Type=dbus
+BusName=com.antergos.welcome
+ExecStart=/usr/bin/antergos-welcomed
+
