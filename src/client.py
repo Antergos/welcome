@@ -83,8 +83,10 @@ class SimpleWelcomed(GObject.GObject):
                 title = _("Installation succeeded!")
                 if len(self.packages) > 1:
                     msg =  _('{} have been successfully installed').format(' '.join(self.packages))
-                else:
+                elif len(self.packages) == 1:
                     msg = _('{} has been successfully installed').format(self.packages[0])
+                else:
+                    msg = ""
             elif status == 'processing':
                 title = _("Installation")
                 msg = _("Installing {} package(s)").format(' '.join(self.packages))
@@ -97,8 +99,10 @@ class SimpleWelcomed(GObject.GObject):
                 title = _("Removal succeeded!")
                 if len(self.packages) > 1:
                     msg =  _('{} have been successfully removed').format(' '.join(self.packages))
-                else:
+                elif len(self.packages) == 1:
                     msg = _('{} has been successfully removed').format(self.packages[0])
+                else:
+                    msg = ""
             elif status == 'processing':
                 title = _("Removal")
                 msg = _("Removing {} package(s)").format(' '.join(self.packages))
@@ -107,7 +111,6 @@ class SimpleWelcomed(GObject.GObject):
                 msg = _("Cannot remove {} package(s)").format(' '.join(self.packages))
                 dialog_type = 'dialog-error'
         elif command == 'refresh' or command == 'refresh_alpm':
-
             if status == 'exit-success':
                 title = _("System refresh succeeded!")
                 msg = _("System databases updated successfully")
@@ -119,7 +122,6 @@ class SimpleWelcomed(GObject.GObject):
                 msg = _("Cannot update system databases!")
                 dialog_type = 'dialog-error'
         elif command == 'system_upgrade':
-
             if status == 'exit-success':
                 title = _("System upgrade succeeded!")
                 msg = _("System upgraded successfully")
