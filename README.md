@@ -5,8 +5,11 @@ antergos-welcome
 
 Antergos welcome screen
 
-* python3
-* gtk
+* python (python3)
 * python-simplejson
 * python-gobject
 * python-pydbus
+* notification-daemon
+* webkit2gtk
+
+
