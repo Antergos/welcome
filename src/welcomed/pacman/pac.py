@@ -184,7 +184,8 @@ class Pac(object):
                 recurse=(options.get('recursive', 0) > 0),
                 recurseall=(options.get('recursive', 0) > 1),
                 unneeded=options.get('unneeded', False),
-                alldeps=(options.get('mode', None) == pyalpm.PKG_REASON_DEPEND),
+                alldeps=(options.get('mode', None) ==
+                         pyalpm.PKG_REASON_DEPEND),
                 allexplicit=(options.get('mode', None) == pyalpm.PKG_REASON_EXPLICIT))
         except pyalpm.error as pyalpm_error:
             msg = _("Can't init alpm transaction: %s")
@@ -235,7 +236,8 @@ class Pac(object):
             return False
 
         for pkg in targets:
-            logging.debug(_("Adding package '%s' to remove transaction"), pkg.name)
+            logging.debug(
+                _("Adding package '%s' to remove transaction"), pkg.name)
             transaction.remove_pkg(pkg)
 
         return self.finalize_transaction(transaction)
@@ -337,7 +339,8 @@ class Pac(object):
                 else:
                     # No, it wasn't neither a package nor a group. As we don't know if
                     # this error is fatal or not, we'll register it and we'll allow to continue.
-                    logging.error(_("Can't find a package or group called '%s'"), name)
+                    logging.error(
+                        _("Can't find a package or group called '%s'"), name)
 
         # Discard duplicates
         targets = list(set(targets))
@@ -362,7 +365,8 @@ class Pac(object):
         for i in range(0, num_targets):
             ok, pkg = self.find_sync_package(targets.pop(), repos)
             if ok:
-                logging.debug(_("Adding package '%s' to install transaction"), pkg.name)
+                logging.debug(
+                    _("Adding package '%s' to install transaction"), pkg.name)
                 transaction.add_pkg(pkg)
             else:
                 logging.warning(pkg)
@@ -415,13 +419,15 @@ class Pac(object):
             # Store info from all packages from all repos
             for repo in self.handle.get_syncdbs():
                 for pkg in repo.pkgcache:
-                    packages_info[pkg.name] = pkginfo.get_pkginfo(pkg, level=2, style='sync')
+                    packages_info[pkg.name] = pkginfo.get_pkginfo(
+                        pkg, level=2, style='sync')
         else:
             repos = dict((db.name, db) for db in self.handle.get_syncdbs())
             for pkg_name in pkg_names:
                 ok, pkg = self.find_sync_package(pkg_name, repos)
                 if ok:
-                    packages_info[pkg_name] = pkginfo.get_pkginfo(pkg, level=2, style='sync')
+                    packages_info[pkg_name] = pkginfo.get_pkginfo(
+                        pkg, level=2, style='sync')
                 else:
                     packages_info = {}
                     logging.error(pkg)

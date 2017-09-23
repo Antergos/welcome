@@ -48,7 +48,8 @@ try:
     from pacman import pac
 except ImportError as err:
     logging.error(err.msg)
-    msg = "Can't find {} bindings. Unable to install/uninstall apps".format(err.name)
+    msg = "Can't find {} bindings. Unable to install/uninstall apps".format(
+        err.name)
     logging.error(msg)
     sys.exit(-1)
 
@@ -99,7 +100,6 @@ class DBusService(object):
         </interface>
     </node>
     """
-
 
     def __init__(self, mainloop, object_path="/com/antergos/welcome"):
         self.alpm = None
@@ -195,7 +195,8 @@ class DBusService(object):
         """ Install updates """
         if self.is_authorized(dbus_context):
             uid = self.get_uuid()
-            self.command_queue.put((uid, 'install_packages', list(package_names)))
+            self.command_queue.put(
+                (uid, 'install_packages', list(package_names)))
             return uid
         else:
             return ""
@@ -224,7 +225,8 @@ class DBusService(object):
         self._command_finished = value
         logging.debug("command_finished")
         # print(value)
-        self.PropertiesChanged("com.antergos.welcome", {"command_finished": self.command_finished}, [])
+        self.PropertiesChanged("com.antergos.welcome", {
+                               "command_finished": self.command_finished}, [])
 
     PropertiesChanged = signal()
 
@@ -317,7 +319,6 @@ class DBusService(object):
 
         return dbus_context.check_authorization(action_id, details, interactive=True)
 
-
     # db.lck -------------------------------------------------------------------
 
     def lock_ok(self):
@@ -346,8 +347,9 @@ class DBusService(object):
             try:
                 # Attempt to create the lockfile.
                 # These flags cause os.open to raise an OSError if the file already exists.
-                fd = os.open(self.lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
-                break;
+                fd = os.open(self.lock_file, os.O_CREAT |
+                             os.O_EXCL | os.O_RDWR)
+                break
             except OSError as err:
                 if err.errno != errno.EEXIST:
                     logging.error("Cannot acquire lock!")

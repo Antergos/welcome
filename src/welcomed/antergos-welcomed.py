@@ -109,7 +109,8 @@ def setup_gettext():
     lang.install()
 
     # With this we can use _("string") to translate
-    gettext.install(APP_NAME, localedir=LOCALE_DIR, codeset=None, names=locale_code)
+    gettext.install(APP_NAME, localedir=LOCALE_DIR,
+                    codeset=None, names=locale_code)
 
 
 if __name__ == '__main__':

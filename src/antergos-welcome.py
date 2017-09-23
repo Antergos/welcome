@@ -62,13 +62,15 @@ class WelcomeConfig(object):
         self._live = os.path.exists('/arch')
 
         # store full path to our binary
-        self._welcome_bin_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
+        self._welcome_bin_path = os.path.abspath(
+            inspect.getfile(inspect.currentframe()))
 
         # store directory to our welcome configuration
         self._config_dir = os.path.expanduser('~/.config/antergos/welcome/')
 
         # store full path to our autostart symlink
-        self._autostart_path = os.path.expanduser('~/.config/autostart/antergos-welcome.desktop')
+        self._autostart_path = os.path.expanduser(
+            '~/.config/autostart/antergos-welcome.desktop')
 
         # ensure our config directory exists
         if not os.path.exists(self._config_dir):
@@ -183,7 +185,7 @@ class WelcomeWebView(WebKit2.WebView):
         elif uri.startswith('apt-install?'):
             # pacman -S
             packages = uri[len('apt-install?'):].split(",")
-            #self.pamac.install(packages)
+            # self.pamac.install(packages)
             self.welcomed.append(SimpleWelcomed(packages, "install"))
             self.welcomed[-1].run_action()
         elif uri.startswith('apt-remove?'):
@@ -206,8 +208,9 @@ class WelcomeWebView(WebKit2.WebView):
         for client in self.welcomed:
             client.quit()
         w = self.get_toplevel()
-        #w.destroy()
+        # w.destroy()
         w.quit()
+
 
 class WelcomeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -223,7 +226,8 @@ class WelcomeApp(Gtk.Application):
         gettext.bindtextdomain(_APP_NAME, _LOCALE_DIR)
 
         locale_code, encoding = locale.getdefaultlocale()
-        lang = gettext.translation(_APP_NAME, _LOCALE_DIR, [locale_code], None, True)
+        lang = gettext.translation(_APP_NAME, _LOCALE_DIR, [
+                                   locale_code], None, True)
         lang.install()
 
     def do_startup(self):
@@ -234,7 +238,8 @@ class WelcomeApp(Gtk.Application):
         if not self.window:
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = WelcomeWindow(application=self, title="Antergos Welcome")
+            self.window = WelcomeWindow(
+                application=self, title="Antergos Welcome")
 
         self.window.present()
 
@@ -247,7 +252,7 @@ class WelcomeWindow(Gtk.ApplicationWindow):
 
         # This will be in the windows group and have the "win" prefix
         max_action = Gio.SimpleAction.new_stateful("maximize", None,
-                                           GLib.Variant.new_boolean(False))
+                                                   GLib.Variant.new_boolean(False))
         max_action.connect("change-state", self.on_maximize_toggle)
         self.add_action(max_action)
 
@@ -288,7 +293,6 @@ class WelcomeWindow(Gtk.ApplicationWindow):
         self.add(b)
         self.connect('delete-event', self.close)
         self.show_all()
-
 
     def set_geometry(self, width, height):
         """ Sets Cnchi window geometry """
@@ -339,7 +343,6 @@ class WelcomeWindow(Gtk.ApplicationWindow):
 
     def quit(self):
         self.destroy()
-
 
 
 app = WelcomeApp()

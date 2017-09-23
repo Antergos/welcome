@@ -20,7 +20,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with Antergos-welcome. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+import sys
+import os
 import gi
 
 gi.require_version('Polkit', '1.0')
@@ -37,8 +38,10 @@ except ImportError as err:
     print(msg)
     sys.exit(-1)
 
+
 def _(x):
     return x
+
 
 class SimpleWelcomed(GObject.GObject):
     def __init__(self, packages, action=""):
@@ -82,33 +85,41 @@ class SimpleWelcomed(GObject.GObject):
             if status == 'exit-success':
                 title = _("Installation succeeded!")
                 if len(self.packages) > 1:
-                    msg =  _('{} have been successfully installed').format(' '.join(self.packages))
+                    msg = _('{} have been successfully installed').format(
+                        ' '.join(self.packages))
                 elif len(self.packages) == 1:
-                    msg = _('{} has been successfully installed').format(self.packages[0])
+                    msg = _('{} has been successfully installed').format(
+                        self.packages[0])
                 else:
                     msg = ""
             elif status == 'processing':
                 title = _("Installation")
-                msg = _("Installing {} package(s)").format(' '.join(self.packages))
+                msg = _("Installing {} package(s)").format(
+                    ' '.join(self.packages))
             else:
                 title = _("Installation failed!")
-                msg = _("Cannot install {} package(s)").format(' '.join(self.packages))
+                msg = _("Cannot install {} package(s)").format(
+                    ' '.join(self.packages))
                 dialog_type = 'dialog-error'
         elif command == 'remove' or command == 'remove_packages' or command == 'remove_package':
             if status == 'exit-success':
                 title = _("Removal succeeded!")
                 if len(self.packages) > 1:
-                    msg =  _('{} have been successfully removed').format(' '.join(self.packages))
+                    msg = _('{} have been successfully removed').format(
+                        ' '.join(self.packages))
                 elif len(self.packages) == 1:
-                    msg = _('{} has been successfully removed').format(self.packages[0])
+                    msg = _('{} has been successfully removed').format(
+                        self.packages[0])
                 else:
                     msg = ""
             elif status == 'processing':
                 title = _("Removal")
-                msg = _("Removing {} package(s)").format(' '.join(self.packages))
+                msg = _("Removing {} package(s)").format(
+                    ' '.join(self.packages))
             else:
                 title = _("Removal failed!")
-                msg = _("Cannot remove {} package(s)").format(' '.join(self.packages))
+                msg = _("Cannot remove {} package(s)").format(
+                    ' '.join(self.packages))
                 dialog_type = 'dialog-error'
         elif command == 'refresh' or command == 'refresh_alpm':
             if status == 'exit-success':
@@ -194,6 +205,7 @@ class SimpleWelcomed(GObject.GObject):
         GLib.timeout_add(self._timeout, self._do_system_upgrade)
         self.loop.run()
 
+
 class WelcomedClient(GObject.GObject):
     _name = 'com.antergos.welcome'
     _object_path = '/com/antergos/welcome'
@@ -201,7 +213,7 @@ class WelcomedClient(GObject.GObject):
 
     __gsignals__ = {
         'command-finished': (GObject.SignalFlags.RUN_FIRST, None,
-            (str, str, GObject.TYPE_PYOBJECT))
+                             (str, str, GObject.TYPE_PYOBJECT))
     }
 
     def __init__(self):
@@ -217,7 +229,8 @@ class WelcomedClient(GObject.GObject):
             if not self.dbus_proxy:
                 self.welcomed_ok = False
             else:
-                self.dbus_proxy.PropertiesChanged.connect(self.on_properties_changed)
+                self.dbus_proxy.PropertiesChanged.connect(
+                    self.on_properties_changed)
                 self.welcomed_ok = self.dbus_proxy.is_alpm_on()
         except Exception as err:
             print(err)
@@ -225,7 +238,8 @@ class WelcomedClient(GObject.GObject):
             if not self.welcomed_ok:
                 msg = _("Can't find Welcome d-bus service. Is it really installed?")
                 Notify.init("antergos-welcome")
-                Notify.Notification.new(_("ERROR!"), msg, 'dialog-error').show()
+                Notify.Notification.new(
+                    _("ERROR!"), msg, 'dialog-error').show()
 
     def refresh(self):
         """ pacman -Sy """
